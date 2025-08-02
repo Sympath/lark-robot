@@ -6,12 +6,19 @@ export interface LogEntry {
 }
 
 export interface WebhookPayload {
-  type: 'url_verification' | 'event_callback';
+  type?: string;
   challenge?: string;
   token?: string;
-  event?: {
-    type: string;
-    [key: string]: any;
+  event?: any;
+  // 飞书 schema 2.0 格式
+  schema?: string;
+  header?: {
+    event_id: string;
+    token: string;
+    create_time: string;
+    event_type: string;
+    tenant_key: string;
+    app_id: string;
   };
 }
 

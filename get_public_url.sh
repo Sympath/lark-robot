@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🔍 正在获取公网地址..."
+echo "🌐 正在获取公网地址..."
 
 # 检查本地服务是否运行
 if ! curl -s http://localhost:3000/api/health > /dev/null; then
@@ -10,43 +10,47 @@ fi
 
 echo "✅ 本地服务运行正常"
 
-# 尝试使用不同的隧道服务
-echo "🌐 尝试建立公网隧道..."
+# 启动 cloudflared 隧道
+echo "🚀 启动 cloudflared 隧道..."
+cloudflared tunnel --url http://localhost:3000 > tunnel.log 2>&1 &
+TUNNEL_PID=$!
 
-# 方法1: 使用 cloudflared
-if command -v cloudflared &> /dev/null; then
-    echo "📡 使用 cloudflared 创建隧道..."
-    cloudflared tunnel --url http://localhost:3000 &
-    CLOUDFLARED_PID=$!
-    sleep 5
-    
-    # 检查 cloudflared 是否成功启动
-    if ps -p $CLOUDFLARED_PID > /dev/null; then
-        echo "✅ cloudflared 隧道已启动"
-        echo "🔗 公网地址: https://your-tunnel-id.trycloudflare.com"
-        echo "📱 Webhook URL: https://your-tunnel-id.trycloudflare.com/api/callback"
-        echo "🏥 Health Check: https://your-tunnel-id.trycloudflare.com/api/health"
-        echo "📝 Logs: https://your-tunnel-id.trycloudflare.com/api/logs"
-        echo ""
-        echo "💡 请查看 cloudflared 的输出日志获取实际的隧道地址"
-        echo "💡 或者访问 https://dash.cloudflare.com/ 查看隧道状态"
-    else
-        echo "❌ cloudflared 启动失败"
-    fi
+# 等待隧道启动
+echo "⏳ 等待隧道启动..."
+sleep 5
+
+# 检查隧道是否启动成功
+if ! ps -p $TUNNEL_PID > /dev/null; then
+    echo "❌ 隧道启动失败"
+    exit 1
+fi
+
+echo "✅ 隧道启动成功，PID: $TUNNEL_PID"
+
+# 从日志中提取公网地址
+echo "🔍 获取公网地址..."
+sleep 3
+
+PUBLIC_URL=$(grep -o "https://[a-zA-Z0-9.-]*\.trycloudflare\.com" tunnel.log | head -1)
+
+if [ -n "$PUBLIC_URL" ]; then
+    echo ""
+    echo "🎉 公网地址获取成功！"
+    echo "🌐 公网地址: $PUBLIC_URL"
+    echo ""
+    echo "📋 飞书 Webhook 配置:"
+    echo "   Webhook URL: $PUBLIC_URL/api/callback"
+    echo "   验证 Token: YMldy28rYB74elrtcGPVehdT32o0rM0Y"
+    echo ""
+    echo "🔧 测试命令:"
+    echo "   curl -X GET $PUBLIC_URL/api/health"
+    echo "   curl -X PUT $PUBLIC_URL/api/message"
+    echo ""
+    echo "💡 提示：将此地址配置到飞书开放平台的事件订阅中"
 else
-    echo "❌ cloudflared 未安装"
+    echo "❌ 无法获取公网地址，请检查 tunnel.log 文件"
+    cat tunnel.log
 fi
 
 echo ""
-echo "🔧 其他选项："
-echo "1. 安装 ngrok 并注册免费账户: https://ngrok.com/"
-echo "2. 使用 localtunnel: npm install -g localtunnel && lt --port 3000"
-echo "3. 使用 serveo: ssh -R 80:localhost:3000 serveo.net"
-echo "4. 使用 Cloudflare Tunnel: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/tunnel-guide/"
-
-echo ""
-echo "📋 本地服务信息："
-echo "🔗 本地地址: http://localhost:3000"
-echo "📱 Webhook URL: http://localhost:3000/api/callback"
-echo "🏥 Health Check: http://localhost:3000/api/health"
-echo "📝 Logs: http://localhost:3000/api/logs" 
+echo "🛑 停止隧道请运行: pkill cloudflared" 

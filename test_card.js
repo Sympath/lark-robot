@@ -21,7 +21,7 @@ async function testCardMessage() {
         "tag": "div",
         "text": {
           "tag": "lark_md",
-          "content": "这是一个测试卡片消息，包含多种元素类型。"
+          "content": "这是一个测试卡片消息，包含多种元素类型。点击按钮测试交互功能。"
         }
       },
       {
@@ -33,7 +33,10 @@ async function testCardMessage() {
               "tag": "plain_text",
               "content": "确认"
             },
-            "type": "primary"
+            "type": "primary",
+            "value": {
+              "key": "confirm"
+            }
           },
           {
             "tag": "button",
@@ -41,7 +44,10 @@ async function testCardMessage() {
               "tag": "plain_text",
               "content": "取消"
             },
-            "type": "default"
+            "type": "default",
+            "value": {
+              "key": "cancel"
+            }
           }
         ]
       }
@@ -208,7 +214,7 @@ async function testCardMessage() {
               },
               "type": "primary",
               "value": {
-                "key": "value"
+                "key": "primary"
               }
             },
             {
@@ -217,7 +223,10 @@ async function testCardMessage() {
                 "tag": "plain_text",
                 "content": "次要操作"
               },
-              "type": "default"
+              "type": "default",
+              "value": {
+                "key": "secondary"
+              }
             }
           ]
         }

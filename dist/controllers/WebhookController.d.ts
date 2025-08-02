@@ -8,5 +8,7 @@ export declare class WebhookController {
     getCallbackInfo(req: Request, res: Response): void;
     private autoReplyToMessage;
     private sendWelcomeMessage;
+    private handleCardInteraction;
+    private sendToastNotification;
 }
 //# sourceMappingURL=WebhookController.d.ts.map

@@ -1,0 +1,165 @@
+2025-08-02T03:36:20.301Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:36:20.300Z",
+  "buttonValue": {
+    "key": "confirm"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "confirm"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-02T03:36:22.589Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:36:22.589Z",
+  "buttonValue": {
+    "key": "confirm"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "confirm"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-02T03:36:24.727Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:36:24.727Z",
+  "buttonValue": {
+    "key": "cancel"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "cancel"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-02T03:36:26.675Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:36:26.675Z",
+  "buttonValue": {
+    "key": "primary"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "primary"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-02T03:36:29.010Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:36:29.010Z",
+  "buttonValue": {
+    "key": "secondary"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "secondary"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-02T03:43:49.786Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:43:49.785Z",
+  "buttonValue": {
+    "key": "secondary"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "secondary"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-02T03:43:56.325Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:43:56.325Z",
+  "buttonValue": {
+    "a": "111222"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "a": "111222"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-02T03:47:57.064Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:47:57.064Z",
+  "buttonValue": {
+    "key": "primary"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "primary"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-02T03:48:01.876Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:48:01.876Z",
+  "buttonValue": {
+    "key": "secondary"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "secondary"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-02T03:48:06.383Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:48:06.383Z",
+  "buttonValue": {
+    "key": "confirm"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "confirm"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-02T03:50:59.377Z - 卡片按钮点击: {
+  "timestamp": "2025-08-02T03:50:59.376Z",
+  "buttonValue": {
+    "key": "primary"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "primary"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
