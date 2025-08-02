@@ -1,0 +1,30 @@
+[Unit]
+Description=Feishu Webhook Server
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/feishu-webhook
+ExecStart=/usr/bin/node dist/index.js
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=feishu-webhook
+
+# 环境变量
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/feishu-webhook/logs
+
+[Install]
+WantedBy=multi-user.target 
