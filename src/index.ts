@@ -82,6 +82,13 @@ app.get('/api/logs', logController.getLogs);
 // 测试页面路由
 app.get('/case', (_req, res) => {
   try {
+    // 添加缓存控制头，防止浏览器缓存
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     const html = ReactDOMServer.renderToString(React.createElement(TestPageContainer));
     res.send(`
       <!DOCTYPE html>
@@ -89,6 +96,9 @@ app.get('/case', (_req, res) => {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+          <meta http-equiv="Pragma" content="no-cache">
+          <meta http-equiv="Expires" content="0">
           <title>飞书 Webhook 测试页面</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
