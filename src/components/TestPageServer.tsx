@@ -76,7 +76,7 @@ const TestPageServer: React.FC = () => {
           fontSize: '14px',
           color: '#495057'
         }}>
-          <strong>版本信息:</strong> v1.0.1 | <strong>构建时间:</strong> 2025-08-03T01:45:19.351Z
+          <strong>版本信息:</strong> v1.0.6 | <strong>构建时间:</strong> 2025-08-03T02:30:19.288Z
         </div>
         
         <div style={styles.testSection}>
