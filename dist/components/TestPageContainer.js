@@ -11,7 +11,7 @@ const TestPageContainer = ({ title = '飞书 Webhook 测试页面' }) => {
               // 客户端 JavaScript 代码 - 完全TSX化
               async function checkHealth() {
                 try {
-                  const response = await fetch('http://' + window.location.host + '/api/health');
+                  const response = await fetch('https://' + window.location.host + '/api/health');
                   const data = await response.json();
                   const resultDiv = document.querySelector('#health-result');
                   if (resultDiv) {
@@ -27,7 +27,7 @@ const TestPageContainer = ({ title = '飞书 Webhook 测试页面' }) => {
               
               async function sendTestMessage() {
                 try {
-                  const response = await fetch('http://' + window.location.host + '/api/message', {
+                  const response = await fetch('https://' + window.location.host + '/api/message', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -50,7 +50,7 @@ const TestPageContainer = ({ title = '飞书 Webhook 测试页面' }) => {
               
               async function sendTestCard() {
                 try {
-                  const response = await fetch('http://' + window.location.host + '/api/message', {
+                  const response = await fetch('https://' + window.location.host + '/api/message', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -79,7 +79,7 @@ const TestPageContainer = ({ title = '飞书 Webhook 测试页面' }) => {
               
               async function getLogs() {
                 try {
-                  const response = await fetch('http://' + window.location.host + '/api/logs');
+                  const response = await fetch('https://' + window.location.host + '/api/logs');
                   const data = await response.json();
                   const resultDiv = document.querySelector('#logs-result');
                   if (resultDiv) {
