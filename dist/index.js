@@ -16,7 +16,7 @@ const LogController_1 = require("./controllers/LogController");
 const react_1 = __importDefault(require("react"));
 const server_1 = __importDefault(require("react-dom/server"));
 const TestPageContainer_1 = __importDefault(require("./components/TestPageContainer"));
-const VERSION = '1.0.3';
+const VERSION = '1.0.4';
 const BUILD_TIME = new Date().toISOString();
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
@@ -75,7 +75,8 @@ app.get('/case', (_req, res) => {
         res.set({
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
-            'Expires': '0'
+            'Expires': '0',
+            'ETag': `"${VERSION}-${BUILD_TIME}"`
         });
         const html = server_1.default.renderToString(react_1.default.createElement(TestPageContainer_1.default));
         res.send(`
@@ -101,6 +102,12 @@ app.get('/case', (_req, res) => {
             <h1>飞书 Webhook 测试页面</h1>
             ${html}
           </div>
+          <script>
+            // 强制刷新缓存
+            if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_BACK_FORWARD) {
+              window.location.reload(true);
+            }
+          </script>
         </body>
       </html>
     `);

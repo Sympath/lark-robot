@@ -13,7 +13,7 @@ import ReactDOMServer from 'react-dom/server';
 import TestPageContainer from './components/TestPageContainer';
 
 // 版本信息
-const VERSION = '1.0.3';
+const VERSION = '1.0.4';
 const BUILD_TIME = new Date().toISOString();
 
 const app = express();
@@ -90,7 +90,8 @@ app.get('/case', (_req, res) => {
     res.set({
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
-      'Expires': '0'
+      'Expires': '0',
+      'ETag': `"${VERSION}-${BUILD_TIME}"`
     });
     
     const html = ReactDOMServer.renderToString(React.createElement(TestPageContainer));
@@ -117,6 +118,12 @@ app.get('/case', (_req, res) => {
             <h1>飞书 Webhook 测试页面</h1>
             ${html}
           </div>
+          <script>
+            // 强制刷新缓存
+            if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_BACK_FORWARD) {
+              window.location.reload(true);
+            }
+          </script>
         </body>
       </html>
     `);
