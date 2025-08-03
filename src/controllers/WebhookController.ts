@@ -222,6 +222,10 @@ export class WebhookController {
         let toastMessage = '';
         
         switch (buttonValue.key) {
+          case 'test':
+            replyMessage = '🎯 你点击了测试按钮！';
+            toastMessage = '测试操作成功';
+            break;
           case 'confirm':
             replyMessage = '✅ 你点击了确认按钮！';
             toastMessage = '操作已确认';
@@ -253,8 +257,8 @@ export class WebhookController {
 
         await this.larkService.sendMessage(messageRequest);
         
-        // 发送 toast 提醒
-        await this.sendToastNotification(userId, toastMessage);
+        // 发送用户通知
+        await this.sendUserNotification(userId, toastMessage);
         
         this.logService.addLog('info', 'Card interaction reply sent', { replyMessage, toastMessage });
         
@@ -268,55 +272,37 @@ export class WebhookController {
     }
   }
 
-  // 发送 toast 提醒
-  private async sendToastNotification(userId: string, message: string): Promise<void> {
+  // 发送用户通知消息
+  private async sendUserNotification(userId: string, message: string): Promise<void> {
     try {
       if (!this.larkService.isSDKLoaded()) {
-        console.log('⚠️ SDK 未加载，跳过 toast 发送');
+        console.log('⚠️ SDK 未加载，跳过通知发送');
         return;
       }
 
-      // 使用飞书 SDK 发送 toast 提醒
-      const lark = require('@larksuiteoapi/node-sdk');
-      const client = new lark.Client({
-        appId: 'cli_a8079e4490b81013',
-        appSecret: 'GAUZ0MUBTqW2TRMjx2jU3ffcQhcttQSI',
-      });
+      // 发送私聊消息给用户
+      const messageRequest: MessageRequest = {
+        receive_id: userId,
+        receive_id_type: 'user_id',
+        content: JSON.stringify({ text: `🔔 ${message}` }),
+        msg_type: 'text'
+      };
 
-      // 发送 toast 消息
-      const toastResult = await client.im.message.create({
-        params: {
-          receive_id_type: 'user_id',
-        },
-        data: {
-          receive_id: userId,
-          content: JSON.stringify({ 
-            text: `🔔 ${message}`,
-            elements: [
-              {
-                tag: "text",
-                text: `🔔 ${message}`
-              }
-            ]
-          }),
-          msg_type: 'text',
-        },
-      });
-
-      console.log('✅ Toast 提醒发送成功:', toastResult);
+      await this.larkService.sendMessage(messageRequest);
+      console.log('✅ 用户通知发送成功:', message);
       
       // 记录到日志文件
       const fs = require('fs');
-      const toastLog = `${new Date().toISOString()} - Toast 提醒: ${message} -> 用户: ${userId}\n`;
-      fs.appendFileSync('toast_notifications.log', toastLog);
+      const notificationLog = `${new Date().toISOString()} - 用户通知: ${message} -> 用户: ${userId}\n`;
+      fs.appendFileSync('user_notifications.log', notificationLog);
       
     } catch (error) {
-      console.error('❌ 发送 toast 提醒失败:', error);
+      console.error('❌ 发送用户通知失败:', error);
       
       // 记录错误到日志文件
       const fs = require('fs');
-      const errorLog = `${new Date().toISOString()} - Toast 发送失败: ${error instanceof Error ? error.message : 'Unknown error'} -> 用户: ${userId}\n`;
-      fs.appendFileSync('toast_errors.log', errorLog);
+      const errorLog = `${new Date().toISOString()} - 用户通知发送失败: ${error instanceof Error ? error.message : 'Unknown error'} -> 用户: ${userId}\n`;
+      fs.appendFileSync('notification_errors.log', errorLog);
     }
   }
 } 

@@ -13,7 +13,7 @@ import ReactDOMServer from 'react-dom/server';
 import TestPageContainer from './components/TestPageContainer';
 
 // 版本信息
-const VERSION = '1.0.2';
+const VERSION = '1.0.3';
 const BUILD_TIME = new Date().toISOString();
 
 const app = express();

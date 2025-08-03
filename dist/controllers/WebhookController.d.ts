@@ -9,6 +9,6 @@ export declare class WebhookController {
     private autoReplyToMessage;
     private sendWelcomeMessage;
     private handleCardInteraction;
-    private sendToastNotification;
+    private sendUserNotification;
 }
 //# sourceMappingURL=WebhookController.d.ts.map
