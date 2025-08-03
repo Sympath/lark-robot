@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  feishu-webhook:
+    build: .
+    container_name: feishu-webhook-prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - feishu-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: feishu-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - feishu-webhook
+    networks:
+      - feishu-network
+
+networks:
+  feishu-network:
+    driver: bridge 
