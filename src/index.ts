@@ -75,7 +75,7 @@ app.get('/favicon.ico', (_req, res) => {
 
 // API路由
 app.get('/api/health', (req, res) => healthController.getHealthStatus(req, res));
-app.post('/api/message', messageController.sendCustomMessage);
+app.post('/api/message', (req, res) => messageController.sendCustomMessage(req, res));
 app.post('/api/webhook', (req, res) => webhookController.handleCallback(req, res));
 app.get('/api/logs', logController.getLogs);
 
