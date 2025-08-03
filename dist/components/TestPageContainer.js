@@ -56,10 +56,10 @@ const TestPageContainer = ({ title = '飞书 Webhook 测试页面' }) => {
                     body: JSON.stringify({
                       type: 'card',
                       content: {
-                        header: { title: { tag: 'plain_text', content: '测试卡片' } },
+                        title: '测试卡片',
                         elements: [
-                          { tag: 'div', text: { tag: 'plain_text', content: '这是一个测试卡片' } },
-                          { tag: 'action', actions: [{ tag: 'button', text: { tag: 'plain_text', content: '点击测试' }, value: { key: 'test' } }] }
+                          [{ tag: 'text', text: '这是一个测试卡片' }],
+                          [{ tag: 'button', text: '点击测试', type: 'default', value: { key: 'test' } }]
                         ]
                       }
                     })

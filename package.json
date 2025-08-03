@@ -1,6 +1,6 @@
 {
   "name": "feishu-webhook-server",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Feishu Webhook Server with TypeScript",
   "main": "dist/index.js",
   "scripts": {
