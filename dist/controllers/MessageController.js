@@ -47,8 +47,9 @@ class MessageController {
     }
     async sendCustomMessage(req, res) {
         try {
-            const { receive_id, template_id, template_variable, receive_id_type = 'user_id', content, msg_type = 'text' } = req.body;
-            if (msg_type === 'interactive') {
+            const { receive_id, template_id, template_variable, receive_id_type = 'user_id', content, msg_type = 'text', type } = req.body;
+            const actualMsgType = type === 'card' ? 'interactive' : msg_type;
+            if (actualMsgType === 'interactive') {
                 const lark = require('@larksuiteoapi/node-sdk');
                 const client = new lark.Client({
                     appId: 'cli_a8079e4490b81013',
@@ -59,8 +60,8 @@ class MessageController {
                         receive_id_type: receive_id_type,
                     },
                     data: {
-                        receive_id: receive_id,
-                        content: content,
+                        receive_id: receive_id || 'c5bf39fa',
+                        content: JSON.stringify(content),
                         msg_type: 'interactive',
                     },
                 });
@@ -89,9 +90,9 @@ class MessageController {
                 return;
             }
             const messageRequest = {
-                receive_id,
-                content: content || JSON.stringify({ text: 'default message' }),
-                msg_type: msg_type,
+                receive_id: receive_id || 'c5bf39fa',
+                content: JSON.stringify({ text: content || 'default message' }),
+                msg_type: actualMsgType,
                 receive_id_type
             };
             const response = await this.larkService.sendMessage(messageRequest);

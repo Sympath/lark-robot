@@ -59,10 +59,13 @@ export class MessageController {
 
   public async sendCustomMessage(req: Request, res: Response): Promise<void> {
     try {
-      const { receive_id, template_id, template_variable, receive_id_type = 'user_id', content, msg_type = 'text' } = req.body;
+      const { receive_id, template_id, template_variable, receive_id_type = 'user_id', content, msg_type = 'text', type } = req.body;
+      
+      // 处理前端发送的type字段
+      const actualMsgType = type === 'card' ? 'interactive' : msg_type;
       
       // 如果是卡片消息，直接使用 SDK 发送
-      if (msg_type === 'interactive') {
+      if (actualMsgType === 'interactive') {
         const lark = require('@larksuiteoapi/node-sdk');
         const client = new lark.Client({
           appId: 'cli_a8079e4490b81013',
@@ -74,8 +77,8 @@ export class MessageController {
             receive_id_type: receive_id_type,
           },
           data: {
-            receive_id: receive_id,
-            content: content,
+            receive_id: receive_id || 'c5bf39fa',
+            content: JSON.stringify(content),
             msg_type: 'interactive',
           },
         });
@@ -113,9 +116,9 @@ export class MessageController {
 
       // 默认文本消息
       const messageRequest: MessageRequest = {
-        receive_id,
-        content: content || JSON.stringify({ text: 'default message' }),
-        msg_type: msg_type,
+        receive_id: receive_id || 'c5bf39fa', // 使用默认用户ID
+        content: JSON.stringify({ text: content || 'default message' }),
+        msg_type: actualMsgType,
         receive_id_type
       };
 
