@@ -16,7 +16,7 @@ const LogController_1 = require("./controllers/LogController");
 const react_1 = __importDefault(require("react"));
 const server_1 = __importDefault(require("react-dom/server"));
 const TestPageContainer_1 = __importDefault(require("./components/TestPageContainer"));
-const VERSION = '1.0.8';
+const VERSION = '1.0.9';
 const BUILD_TIME = new Date().toISOString();
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
@@ -69,7 +69,8 @@ app.get('/favicon.ico', (_req, res) => {
 app.get('/api/health', (req, res) => healthController.getHealthStatus(req, res));
 app.post('/api/message', (req, res) => messageController.sendCustomMessage(req, res));
 app.post('/api/webhook', (req, res) => webhookController.handleCallback(req, res));
-app.get('/api/logs', logController.getLogs);
+app.post('/api/callback', (req, res) => webhookController.handleCallback(req, res));
+app.get('/api/logs', (req, res) => logController.getLogs(req, res));
 app.get('/case', (_req, res) => {
     try {
         res.set({

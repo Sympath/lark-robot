@@ -12,6 +12,31 @@ export class WebhookController {
     this.larkService = new LarkService();
   }
 
+  // 专门处理飞书 URL 验证的端点
+  public async handleUrlVerification(req: Request, res: Response): Promise<void> {
+    try {
+      const payload = req.body;
+      console.log('🔍 URL 验证请求:', JSON.stringify(payload, null, 2));
+      
+      // 处理 URL 验证
+      if (payload.type === 'url_verification') {
+        console.log('✅ URL 验证成功，challenge:', payload.challenge);
+        this.logService.addLog('info', 'URL verification successful', { challenge: payload.challenge });
+        
+        // 返回正确的 JSON 格式
+        res.setHeader('Content-Type', 'application/json');
+        res.json({ challenge: payload.challenge });
+        return;
+      }
+
+      // 如果不是验证请求，返回错误
+      res.status(400).json({ error: 'Invalid verification request' });
+    } catch (error) {
+      console.error('URL 验证失败:', error);
+      res.status(500).json({ error: 'Verification failed' });
+    }
+  }
+
   public async handleCallback(req: Request, res: Response): Promise<void> {
     try {
       const payload: WebhookPayload = req.body;
@@ -35,47 +60,64 @@ export class WebhookController {
         
         this.logService.addLog('info', `Event received: ${event.type}`, event);
 
-        // 根据事件类型处理
-        switch (event.type) {
-          case 'message':
-            this.logService.addLog('info', 'Message event processed', event);
-            // 自动回复消息
-            await this.autoReplyToMessage(event);
-            break;
+        try {
+          console.log('🔍 开始处理事件类型:', event.type);
           
-          case 'user_added':
-            this.logService.addLog('info', 'User added event processed', event);
-            // 发送欢迎消息
-            await this.sendWelcomeMessage(event);
-            break;
-          
-          case 'user_removed':
-            this.logService.addLog('info', 'User removed event processed', event);
-            break;
-          
-          case 'interactive':
-            this.logService.addLog('info', 'Interactive event processed', event);
-            // 处理卡片按钮点击
-            await this.handleCardInteraction(event);
-            break;
-          
-          case 'card.action.trigger':
-            this.logService.addLog('info', 'Card action trigger event processed', event);
-            // 处理卡片按钮点击
-            await this.handleCardInteraction(event);
-            break;
-          
-          default:
-            this.logService.addLog('info', `Unknown event type: ${event.type}`, event);
-            // 如果没有明确的类型，但有 action，也当作卡片交互处理
-            if (event.action) {
-              console.log('🔍 检测到 action，当作卡片交互处理');
+          // 根据事件类型处理
+          switch (event.type) {
+            case 'message':
+              console.log('📝 处理消息事件');
+              this.logService.addLog('info', 'Message event processed', event);
+              // 自动回复消息
+              await this.autoReplyToMessage(event);
+              break;
+            
+            case 'user_added':
+              console.log('👤 处理用户添加事件');
+              this.logService.addLog('info', 'User added event processed', event);
+              // 发送欢迎消息
+              await this.sendWelcomeMessage(event);
+              break;
+            
+            case 'user_removed':
+              console.log('👤 处理用户移除事件');
+              this.logService.addLog('info', 'User removed event processed', event);
+              break;
+            
+            case 'interactive':
+              console.log('🔘 处理交互事件');
+              this.logService.addLog('info', 'Interactive event processed', event);
+              // 处理卡片按钮点击
               await this.handleCardInteraction(event);
-            }
-        }
+              break;
+            
+            case 'card.action.trigger':
+              console.log('🔘 处理卡片动作触发事件');
+              this.logService.addLog('info', 'Card action trigger event processed', event);
+              // 处理卡片按钮点击
+              await this.handleCardInteraction(event);
+              break;
+            
+            default:
+              console.log('❓ 未知事件类型:', event.type);
+              this.logService.addLog('info', `Unknown event type: ${event.type}`, event);
+              // 如果没有明确的类型，但有 action，也当作卡片交互处理
+              if (event.action) {
+                console.log('🔍 检测到 action，当作卡片交互处理');
+                await this.handleCardInteraction(event);
+              }
+          }
 
-        res.json({ success: true });
-        return;
+          console.log('✅ 事件处理完成，返回成功响应');
+          res.json({ success: true });
+          return;
+        } catch (error) {
+          console.error('❌ 事件处理过程中发生错误:', error);
+          this.logService.addLog('error', 'Event processing failed', error instanceof Error ? error.message : 'Unknown error');
+          // 即使处理失败，也返回成功响应，避免飞书重试
+          res.json({ success: true, error: error instanceof Error ? error.message : 'Unknown error' });
+          return;
+        }
       }
 
       // 处理旧格式的事件回调
@@ -83,42 +125,63 @@ export class WebhookController {
         const event = payload.event;
         this.logService.addLog('info', `Event received (old format): ${event.type}`, event);
 
-        // 根据事件类型处理
-        switch (event.type) {
-          case 'message':
-            this.logService.addLog('info', 'Message event processed', event);
-            // 自动回复消息
-            await this.autoReplyToMessage(event);
-            break;
-          
-          case 'user_added':
-            this.logService.addLog('info', 'User added event processed', event);
-            // 发送欢迎消息
-            await this.sendWelcomeMessage(event);
-            break;
-          
-          case 'user_removed':
-            this.logService.addLog('info', 'User removed event processed', event);
-            break;
-          
-          case 'interactive':
-            this.logService.addLog('info', 'Interactive event processed', event);
-            // 处理卡片按钮点击
-            await this.handleCardInteraction(event);
-            break;
-          
-          default:
-            this.logService.addLog('info', `Unknown event type: ${event.type}`, event);
-        }
+        try {
+          // 根据事件类型处理
+          switch (event.type) {
+            case 'message':
+              this.logService.addLog('info', 'Message event processed', event);
+              // 自动回复消息
+              await this.autoReplyToMessage(event);
+              break;
+            
+            case 'user_added':
+              this.logService.addLog('info', 'User added event processed', event);
+              // 发送欢迎消息
+              await this.sendWelcomeMessage(event);
+              break;
+            
+            case 'user_removed':
+              this.logService.addLog('info', 'User removed event processed', event);
+              break;
+            
+            case 'interactive':
+              this.logService.addLog('info', 'Interactive event processed', event);
+              // 处理卡片按钮点击
+              await this.handleCardInteraction(event);
+              break;
+            
+            case 'card.action.trigger':
+              this.logService.addLog('info', 'Card action trigger event processed', event);
+              // 处理卡片按钮点击
+              await this.handleCardInteraction(event);
+              break;
+            
+            default:
+              this.logService.addLog('info', `Unknown event type: ${event.type}`, event);
+              // 如果没有明确的类型，但有 action，也当作卡片交互处理
+              if (event.action) {
+                console.log('🔍 检测到 action，当作卡片交互处理');
+                await this.handleCardInteraction(event);
+              }
+          }
 
-        res.json({ success: true });
-        return;
+          console.log('✅ 旧格式事件处理完成，返回成功响应');
+          res.json({ success: true });
+          return;
+        } catch (error) {
+          console.error('❌ 旧格式事件处理过程中发生错误:', error);
+          this.logService.addLog('error', 'Old format event processing failed', error instanceof Error ? error.message : 'Unknown error');
+          // 即使处理失败，也返回成功响应，避免飞书重试
+          res.json({ success: true, error: error instanceof Error ? error.message : 'Unknown error' });
+          return;
+        }
       }
 
-      res.json({ success: true });
+      // 如果没有匹配的格式，返回错误
+      res.status(400).json({ error: 'Invalid webhook payload' });
     } catch (error) {
-      this.logService.addLog('error', 'Error processing webhook', error instanceof Error ? error.message : 'Unknown error');
-      res.status(500).json({ error: 'Internal server error' });
+      console.error('Webhook processing failed:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
     }
   }
 
@@ -260,6 +323,9 @@ export class WebhookController {
         // 发送用户通知
         await this.sendUserNotification(userId, toastMessage);
         
+        // 发送Toast通知
+        await this.sendToastNotification(userId, toastMessage);
+        
         this.logService.addLog('info', 'Card interaction reply sent', { replyMessage, toastMessage });
         
       } else {
@@ -303,6 +369,56 @@ export class WebhookController {
       const fs = require('fs');
       const errorLog = `${new Date().toISOString()} - 用户通知发送失败: ${error instanceof Error ? error.message : 'Unknown error'} -> 用户: ${userId}\n`;
       fs.appendFileSync('notification_errors.log', errorLog);
+    }
+  }
+
+  // 发送Toast通知
+  private async sendToastNotification(userId: string, message: string): Promise<void> {
+    try {
+      if (!this.larkService.isSDKLoaded()) {
+        console.log('⚠️ SDK 未加载，跳过toast通知发送');
+        return;
+      }
+
+      // 使用飞书SDK发送toast通知
+      const lark = require('@larksuiteoapi/node-sdk');
+      const client = new lark.Client({
+        appId: 'cli_a8079e4490b81013',
+        appSecret: 'GAUZ0MUBTqW2TRMjx2jU3ffcQhcttQSI',
+      });
+
+      // 发送toast通知
+      await client.im.message.create({
+        params: {
+          receive_id_type: 'user_id',
+        },
+        data: {
+          receive_id: userId,
+          content: JSON.stringify({ 
+            text: `🔔 ${message}`,
+            toast: {
+              text: message,
+              type: 'success'
+            }
+          }),
+          msg_type: 'text',
+        },
+      });
+
+      console.log('✅ Toast通知发送成功:', message);
+      
+      // 记录到toast日志文件
+      const fs = require('fs');
+      const toastLog = `${new Date().toISOString()} - Toast 提醒: ${message} -> 用户: ${userId}\n`;
+      fs.appendFileSync('toast_notifications.log', toastLog);
+      
+    } catch (error) {
+      console.error('❌ 发送Toast通知失败:', error);
+      
+      // 记录错误到日志文件
+      const fs = require('fs');
+      const errorLog = `${new Date().toISOString()} - Toast通知发送失败: ${error instanceof Error ? error.message : 'Unknown error'} -> 用户: ${userId}\n`;
+      fs.appendFileSync('toast_errors.log', errorLog);
     }
   }
 } 

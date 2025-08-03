@@ -7,6 +7,24 @@ class WebhookController {
         this.logService = logService;
         this.larkService = new LarkService_1.LarkService();
     }
+    async handleUrlVerification(req, res) {
+        try {
+            const payload = req.body;
+            console.log('🔍 URL 验证请求:', JSON.stringify(payload, null, 2));
+            if (payload.type === 'url_verification') {
+                console.log('✅ URL 验证成功，challenge:', payload.challenge);
+                this.logService.addLog('info', 'URL verification successful', { challenge: payload.challenge });
+                res.setHeader('Content-Type', 'application/json');
+                res.json({ challenge: payload.challenge });
+                return;
+            }
+            res.status(400).json({ error: 'Invalid verification request' });
+        }
+        catch (error) {
+            console.error('URL 验证失败:', error);
+            res.status(500).json({ error: 'Verification failed' });
+        }
+    }
     async handleCallback(req, res) {
         try {
             const payload = req.body;
@@ -23,66 +41,99 @@ class WebhookController {
                 console.log('🔍 事件类型:', event.type);
                 console.log('🔍 事件键:', Object.keys(event));
                 this.logService.addLog('info', `Event received: ${event.type}`, event);
-                switch (event.type) {
-                    case 'message':
-                        this.logService.addLog('info', 'Message event processed', event);
-                        await this.autoReplyToMessage(event);
-                        break;
-                    case 'user_added':
-                        this.logService.addLog('info', 'User added event processed', event);
-                        await this.sendWelcomeMessage(event);
-                        break;
-                    case 'user_removed':
-                        this.logService.addLog('info', 'User removed event processed', event);
-                        break;
-                    case 'interactive':
-                        this.logService.addLog('info', 'Interactive event processed', event);
-                        await this.handleCardInteraction(event);
-                        break;
-                    case 'card.action.trigger':
-                        this.logService.addLog('info', 'Card action trigger event processed', event);
-                        await this.handleCardInteraction(event);
-                        break;
-                    default:
-                        this.logService.addLog('info', `Unknown event type: ${event.type}`, event);
-                        if (event.action) {
-                            console.log('🔍 检测到 action，当作卡片交互处理');
+                try {
+                    console.log('🔍 开始处理事件类型:', event.type);
+                    switch (event.type) {
+                        case 'message':
+                            console.log('📝 处理消息事件');
+                            this.logService.addLog('info', 'Message event processed', event);
+                            await this.autoReplyToMessage(event);
+                            break;
+                        case 'user_added':
+                            console.log('👤 处理用户添加事件');
+                            this.logService.addLog('info', 'User added event processed', event);
+                            await this.sendWelcomeMessage(event);
+                            break;
+                        case 'user_removed':
+                            console.log('👤 处理用户移除事件');
+                            this.logService.addLog('info', 'User removed event processed', event);
+                            break;
+                        case 'interactive':
+                            console.log('🔘 处理交互事件');
+                            this.logService.addLog('info', 'Interactive event processed', event);
                             await this.handleCardInteraction(event);
-                        }
+                            break;
+                        case 'card.action.trigger':
+                            console.log('🔘 处理卡片动作触发事件');
+                            this.logService.addLog('info', 'Card action trigger event processed', event);
+                            await this.handleCardInteraction(event);
+                            break;
+                        default:
+                            console.log('❓ 未知事件类型:', event.type);
+                            this.logService.addLog('info', `Unknown event type: ${event.type}`, event);
+                            if (event.action) {
+                                console.log('🔍 检测到 action，当作卡片交互处理');
+                                await this.handleCardInteraction(event);
+                            }
+                    }
+                    console.log('✅ 事件处理完成，返回成功响应');
+                    res.json({ success: true });
+                    return;
                 }
-                res.json({ success: true });
-                return;
+                catch (error) {
+                    console.error('❌ 事件处理过程中发生错误:', error);
+                    this.logService.addLog('error', 'Event processing failed', error instanceof Error ? error.message : 'Unknown error');
+                    res.json({ success: true, error: error instanceof Error ? error.message : 'Unknown error' });
+                    return;
+                }
             }
             if (payload.type === 'event_callback' && payload.event) {
                 const event = payload.event;
                 this.logService.addLog('info', `Event received (old format): ${event.type}`, event);
-                switch (event.type) {
-                    case 'message':
-                        this.logService.addLog('info', 'Message event processed', event);
-                        await this.autoReplyToMessage(event);
-                        break;
-                    case 'user_added':
-                        this.logService.addLog('info', 'User added event processed', event);
-                        await this.sendWelcomeMessage(event);
-                        break;
-                    case 'user_removed':
-                        this.logService.addLog('info', 'User removed event processed', event);
-                        break;
-                    case 'interactive':
-                        this.logService.addLog('info', 'Interactive event processed', event);
-                        await this.handleCardInteraction(event);
-                        break;
-                    default:
-                        this.logService.addLog('info', `Unknown event type: ${event.type}`, event);
+                try {
+                    switch (event.type) {
+                        case 'message':
+                            this.logService.addLog('info', 'Message event processed', event);
+                            await this.autoReplyToMessage(event);
+                            break;
+                        case 'user_added':
+                            this.logService.addLog('info', 'User added event processed', event);
+                            await this.sendWelcomeMessage(event);
+                            break;
+                        case 'user_removed':
+                            this.logService.addLog('info', 'User removed event processed', event);
+                            break;
+                        case 'interactive':
+                            this.logService.addLog('info', 'Interactive event processed', event);
+                            await this.handleCardInteraction(event);
+                            break;
+                        case 'card.action.trigger':
+                            this.logService.addLog('info', 'Card action trigger event processed', event);
+                            await this.handleCardInteraction(event);
+                            break;
+                        default:
+                            this.logService.addLog('info', `Unknown event type: ${event.type}`, event);
+                            if (event.action) {
+                                console.log('🔍 检测到 action，当作卡片交互处理');
+                                await this.handleCardInteraction(event);
+                            }
+                    }
+                    console.log('✅ 旧格式事件处理完成，返回成功响应');
+                    res.json({ success: true });
+                    return;
                 }
-                res.json({ success: true });
-                return;
+                catch (error) {
+                    console.error('❌ 旧格式事件处理过程中发生错误:', error);
+                    this.logService.addLog('error', 'Old format event processing failed', error instanceof Error ? error.message : 'Unknown error');
+                    res.json({ success: true, error: error instanceof Error ? error.message : 'Unknown error' });
+                    return;
+                }
             }
-            res.json({ success: true });
+            res.status(400).json({ error: 'Invalid webhook payload' });
         }
         catch (error) {
-            this.logService.addLog('error', 'Error processing webhook', error instanceof Error ? error.message : 'Unknown error');
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('Webhook processing failed:', error);
+            res.status(500).json({ error: 'Webhook processing failed' });
         }
     }
     getCallbackInfo(req, res) {
@@ -198,6 +249,7 @@ class WebhookController {
                 };
                 await this.larkService.sendMessage(messageRequest);
                 await this.sendUserNotification(userId, toastMessage);
+                await this.sendToastNotification(userId, toastMessage);
                 this.logService.addLog('info', 'Card interaction reply sent', { replyMessage, toastMessage });
             }
             else {
@@ -233,6 +285,45 @@ class WebhookController {
             const fs = require('fs');
             const errorLog = `${new Date().toISOString()} - 用户通知发送失败: ${error instanceof Error ? error.message : 'Unknown error'} -> 用户: ${userId}\n`;
             fs.appendFileSync('notification_errors.log', errorLog);
+        }
+    }
+    async sendToastNotification(userId, message) {
+        try {
+            if (!this.larkService.isSDKLoaded()) {
+                console.log('⚠️ SDK 未加载，跳过toast通知发送');
+                return;
+            }
+            const lark = require('@larksuiteoapi/node-sdk');
+            const client = new lark.Client({
+                appId: 'cli_a8079e4490b81013',
+                appSecret: 'GAUZ0MUBTqW2TRMjx2jU3ffcQhcttQSI',
+            });
+            await client.im.message.create({
+                params: {
+                    receive_id_type: 'user_id',
+                },
+                data: {
+                    receive_id: userId,
+                    content: JSON.stringify({
+                        text: `🔔 ${message}`,
+                        toast: {
+                            text: message,
+                            type: 'success'
+                        }
+                    }),
+                    msg_type: 'text',
+                },
+            });
+            console.log('✅ Toast通知发送成功:', message);
+            const fs = require('fs');
+            const toastLog = `${new Date().toISOString()} - Toast 提醒: ${message} -> 用户: ${userId}\n`;
+            fs.appendFileSync('toast_notifications.log', toastLog);
+        }
+        catch (error) {
+            console.error('❌ 发送Toast通知失败:', error);
+            const fs = require('fs');
+            const errorLog = `${new Date().toISOString()} - Toast通知发送失败: ${error instanceof Error ? error.message : 'Unknown error'} -> 用户: ${userId}\n`;
+            fs.appendFileSync('toast_errors.log', errorLog);
         }
     }
 }

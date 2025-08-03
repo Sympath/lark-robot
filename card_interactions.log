@@ -314,3 +314,33 @@
   },
   "eventType": "card_interaction"
 }
+2025-08-03T13:47:04.145Z - 卡片按钮点击: {
+  "timestamp": "2025-08-03T13:47:04.145Z",
+  "buttonValue": {
+    "key": "test"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "test"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}
+2025-08-03T13:50:38.122Z - 卡片按钮点击: {
+  "timestamp": "2025-08-03T13:50:38.122Z",
+  "buttonValue": {
+    "key": "confirm"
+  },
+  "userId": "c5bf39fa",
+  "chatId": "oc_e55d91081dddae90bd877294a437ed2e",
+  "action": {
+    "value": {
+      "key": "confirm"
+    },
+    "tag": "button"
+  },
+  "eventType": "card_interaction"
+}

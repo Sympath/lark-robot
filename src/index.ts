@@ -13,7 +13,7 @@ import ReactDOMServer from 'react-dom/server';
 import TestPageContainer from './components/TestPageContainer';
 
 // 版本信息
-const VERSION = '1.0.8';
+const VERSION = '1.0.9';
 const BUILD_TIME = new Date().toISOString();
 
 const app = express();
@@ -81,7 +81,8 @@ app.get('/favicon.ico', (_req, res) => {
 app.get('/api/health', (req, res) => healthController.getHealthStatus(req, res));
 app.post('/api/message', (req, res) => messageController.sendCustomMessage(req, res));
 app.post('/api/webhook', (req, res) => webhookController.handleCallback(req, res));
-app.get('/api/logs', logController.getLogs);
+app.post('/api/callback', (req, res) => webhookController.handleCallback(req, res));
+app.get('/api/logs', (req, res) => logController.getLogs(req, res));
 
 // 测试页面路由
 app.get('/case', (_req, res) => {

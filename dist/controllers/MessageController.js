@@ -55,13 +55,50 @@ class MessageController {
                     appId: 'cli_a8079e4490b81013',
                     appSecret: 'GAUZ0MUBTqW2TRMjx2jU3ffcQhcttQSI',
                 });
+                const cardContent = {
+                    config: {
+                        wide_screen_mode: true
+                    },
+                    header: {
+                        title: {
+                            tag: "plain_text",
+                            content: content?.title || "测试卡片"
+                        }
+                    },
+                    elements: content?.elements || [
+                        {
+                            tag: "div",
+                            text: {
+                                tag: "plain_text",
+                                content: "这是一个测试卡片"
+                            }
+                        },
+                        {
+                            tag: "action",
+                            actions: [
+                                {
+                                    tag: "button",
+                                    text: {
+                                        tag: "plain_text",
+                                        content: "点击测试"
+                                    },
+                                    type: "default",
+                                    value: {
+                                        key: "test"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                };
+                console.log('🔍 发送卡片消息:', JSON.stringify(cardContent, null, 2));
                 const result = await client.im.message.create({
                     params: {
                         receive_id_type: receive_id_type,
                     },
                     data: {
                         receive_id: receive_id || 'c5bf39fa',
-                        content: JSON.stringify(content),
+                        content: JSON.stringify(cardContent),
                         msg_type: 'interactive',
                     },
                 });
@@ -104,6 +141,7 @@ class MessageController {
             });
         }
         catch (error) {
+            console.error('发送消息失败:', error);
             this.logService.addLog('error', 'Error sending custom message', error instanceof Error ? error.message : 'Unknown error');
             res.status(500).json({
                 success: false,

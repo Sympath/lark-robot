@@ -64,7 +64,7 @@ export class MessageController {
       // 处理前端发送的type字段
       const actualMsgType = type === 'card' ? 'interactive' : msg_type;
       
-      // 如果是卡片消息，直接使用 SDK 发送
+      // 如果是卡片消息，使用正确的卡片格式
       if (actualMsgType === 'interactive') {
         const lark = require('@larksuiteoapi/node-sdk');
         const client = new lark.Client({
@@ -72,13 +72,53 @@ export class MessageController {
           appSecret: 'GAUZ0MUBTqW2TRMjx2jU3ffcQhcttQSI',
         });
 
+        // 构建正确的卡片格式
+        const cardContent = {
+          config: {
+            wide_screen_mode: true
+          },
+          header: {
+            title: {
+              tag: "plain_text",
+              content: content?.title || "测试卡片"
+            }
+          },
+          elements: content?.elements || [
+            {
+              tag: "div",
+              text: {
+                tag: "plain_text",
+                content: "这是一个测试卡片"
+              }
+            },
+            {
+              tag: "action",
+              actions: [
+                {
+                  tag: "button",
+                  text: {
+                    tag: "plain_text",
+                    content: "点击测试"
+                  },
+                  type: "default",
+                  value: {
+                    key: "test"
+                  }
+                }
+              ]
+            }
+          ]
+        };
+
+        console.log('🔍 发送卡片消息:', JSON.stringify(cardContent, null, 2));
+
         const result = await client.im.message.create({
           params: {
             receive_id_type: receive_id_type,
           },
           data: {
             receive_id: receive_id || 'c5bf39fa',
-            content: JSON.stringify(content),
+            content: JSON.stringify(cardContent),
             msg_type: 'interactive',
           },
         });
@@ -132,6 +172,7 @@ export class MessageController {
         data: response
       });
     } catch (error) {
+      console.error('发送消息失败:', error);
       this.logService.addLog('error', 'Error sending custom message', error instanceof Error ? error.message : 'Unknown error');
       res.status(500).json({ 
         success: false, 
