@@ -67,6 +67,17 @@ const TestPageServer: React.FC = () => {
     <div style={styles.body}>
       <div style={styles.container}>
         <h1 style={styles.title}>飞书 Webhook 测试页面</h1>
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '20px',
+          padding: '10px',
+          backgroundColor: '#e9ecef',
+          borderRadius: '5px',
+          fontSize: '14px',
+          color: '#495057'
+        }}>
+          <strong>版本信息:</strong> v1.0.1 | <strong>构建时间:</strong> 2025-08-03T01:45:19.351Z
+        </div>
         
         <div style={styles.testSection}>
           <h3 style={styles.sectionTitle}>
