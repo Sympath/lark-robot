@@ -16,6 +16,8 @@ const LogController_1 = require("./controllers/LogController");
 const react_1 = __importDefault(require("react"));
 const server_1 = __importDefault(require("react-dom/server"));
 const TestPageContainer_1 = __importDefault(require("./components/TestPageContainer"));
+const VERSION = '1.0.1';
+const BUILD_TIME = new Date().toISOString();
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 const logService = new LogService_1.LogService();
@@ -117,6 +119,8 @@ app.use((err, _req, res, _next) => {
 });
 app.listen(port, () => {
     console.log('🚀 飞书 Webhook 服务器启动成功');
+    console.log('📦 版本信息:', VERSION);
+    console.log('⏰ 构建时间:', BUILD_TIME);
     console.log('📍 服务地址:', `http://localhost:${port}`);
     console.log('🧪 测试页面:', `http://localhost:${port}/case`);
     console.log('🔍 健康检查:', `http://localhost:${port}/api/health`);

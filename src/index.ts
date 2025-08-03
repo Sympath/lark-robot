@@ -12,6 +12,10 @@ import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import TestPageContainer from './components/TestPageContainer';
 
+// 版本信息
+const VERSION = '1.0.1';
+const BUILD_TIME = new Date().toISOString();
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -136,6 +140,8 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 // 启动服务器
 app.listen(port, () => {
   console.log('🚀 飞书 Webhook 服务器启动成功');
+  console.log('📦 版本信息:', VERSION);
+  console.log('⏰ 构建时间:', BUILD_TIME);
   console.log('📍 服务地址:', `http://localhost:${port}`);
   console.log('🧪 测试页面:', `http://localhost:${port}/case`);
   console.log('🔍 健康检查:', `http://localhost:${port}/api/health`);
