@@ -25,7 +25,7 @@ const TestPageContainer: React.FC<TestPageContainerProps> = ({
               // 客户端 JavaScript 代码 - 完全TSX化
               async function checkHealth() {
                 try {
-                  const response = await fetch('/api/health');
+                  const response = await fetch('http://' + window.location.host + '/api/health');
                   const data = await response.json();
                   const resultDiv = document.querySelector('#health-result');
                   if (resultDiv) {
@@ -41,7 +41,7 @@ const TestPageContainer: React.FC<TestPageContainerProps> = ({
               
               async function sendTestMessage() {
                 try {
-                  const response = await fetch('/api/message', {
+                  const response = await fetch('http://' + window.location.host + '/api/message', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -64,7 +64,7 @@ const TestPageContainer: React.FC<TestPageContainerProps> = ({
               
               async function sendTestCard() {
                 try {
-                  const response = await fetch('/api/message', {
+                  const response = await fetch('http://' + window.location.host + '/api/message', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -93,7 +93,7 @@ const TestPageContainer: React.FC<TestPageContainerProps> = ({
               
               async function getLogs() {
                 try {
-                  const response = await fetch('/api/logs');
+                  const response = await fetch('http://' + window.location.host + '/api/logs');
                   const data = await response.json();
                   const resultDiv = document.querySelector('#logs-result');
                   if (resultDiv) {
