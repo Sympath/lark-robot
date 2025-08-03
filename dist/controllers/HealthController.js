@@ -5,6 +5,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HealthController = void 0;
 const config_1 = __importDefault(require("../config"));
+const getVersion = () => {
+    try {
+        const packageJson = require('../../package.json');
+        return packageJson.version;
+    }
+    catch (error) {
+        return '1.0.0';
+    }
+};
 class HealthController {
     constructor(larkService, logService) {
         this.larkService = larkService;
@@ -16,7 +25,7 @@ class HealthController {
                 status: 'healthy',
                 timestamp: new Date().toISOString(),
                 uptime: process.uptime(),
-                version: '1.0.0',
+                version: getVersion(),
                 environment: config_1.default.environment,
                 services: {
                     webhook: true,
@@ -38,7 +47,7 @@ class HealthController {
                 status: 'unhealthy',
                 timestamp: new Date().toISOString(),
                 uptime: process.uptime(),
-                version: '1.0.0',
+                version: getVersion(),
                 environment: config_1.default.environment,
                 services: {
                     webhook: false,

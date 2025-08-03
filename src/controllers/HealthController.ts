@@ -4,6 +4,16 @@ import { LarkService } from '../services/LarkService';
 import { LogService } from '../services/LogService';
 import config from '../config';
 
+// 动态获取版本号
+const getVersion = (): string => {
+  try {
+    const packageJson = require('../../package.json');
+    return packageJson.version;
+  } catch (error) {
+    return '1.0.0'; // 默认版本号
+  }
+};
+
 export class HealthController {
   private larkService: LarkService;
   private logService: LogService;
@@ -19,7 +29,7 @@ export class HealthController {
         status: 'healthy',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        version: '1.0.0',
+        version: getVersion(),
         environment: config.environment,
         services: {
           webhook: true,
@@ -42,7 +52,7 @@ export class HealthController {
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        version: '1.0.0',
+        version: getVersion(),
         environment: config.environment,
         services: {
           webhook: false,
