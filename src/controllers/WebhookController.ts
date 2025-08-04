@@ -2,14 +2,17 @@ import { Request, Response } from 'express';
 import { WebhookPayload, MessageRequest } from '../types';
 import { LogService } from '../services/LogService';
 import { LarkService } from '../services/LarkService';
+import { AuthService } from '../services/AuthService';
 
 export class WebhookController {
   private logService: LogService;
   private larkService: LarkService;
+  private authService: AuthService;
 
   constructor(logService: LogService) {
     this.logService = logService;
     this.larkService = new LarkService();
+    this.authService = new AuthService();
   }
 
   // 专门处理飞书 URL 验证的端点
@@ -18,21 +21,28 @@ export class WebhookController {
       const payload = req.body;
       console.log('🔍 URL 验证请求:', JSON.stringify(payload, null, 2));
       
-      // 处理 URL 验证
-      if (payload.type === 'url_verification') {
-        console.log('✅ URL 验证成功，challenge:', payload.challenge);
-        this.logService.addLog('info', 'URL verification successful', { challenge: payload.challenge });
-        
-        // 返回正确的 JSON 格式
-        res.setHeader('Content-Type', 'application/json');
-        res.json({ challenge: payload.challenge });
+      // 使用鉴权服务验证请求
+      const authResult = this.authService.validateUrlVerification(payload);
+      
+      if (!authResult.isValid) {
+        console.error('❌ URL 验证失败:', authResult.error);
+        this.logService.addLog('error', 'URL verification failed', { error: authResult.error });
+        res.status(401).json({ error: authResult.error });
         return;
       }
 
-      // 如果不是验证请求，返回错误
-      res.status(400).json({ error: 'Invalid verification request' });
+      console.log('✅ URL 验证成功，challenge:', authResult.payload.challenge);
+      this.logService.addLog('info', 'URL verification successful', { 
+        challenge: authResult.payload.challenge,
+        timestamp: new Date().toISOString()
+      });
+      
+      // 返回正确的 JSON 格式
+      res.setHeader('Content-Type', 'application/json');
+      res.json({ challenge: authResult.payload.challenge });
     } catch (error) {
       console.error('URL 验证失败:', error);
+      this.logService.addLog('error', 'URL verification error', error instanceof Error ? error.message : 'Unknown error');
       res.status(500).json({ error: 'Verification failed' });
     }
   }
@@ -43,6 +53,19 @@ export class WebhookController {
       
       this.logService.addLog('info', 'callback received', payload);
       console.log('🔍 收到 webhook 请求:', JSON.stringify(payload, null, 2));
+
+      // 使用鉴权服务验证请求
+      const authResult = this.authService.validateRequest(req);
+      
+      if (!authResult.isValid) {
+        console.error('❌ 请求验证失败:', authResult.error);
+        this.logService.addLog('error', 'Request validation failed', { error: authResult.error });
+        res.status(401).json({ error: authResult.error });
+        return;
+      }
+
+      console.log('✅ 请求验证成功');
+      this.logService.addLog('info', 'Request validation successful');
 
       // 处理 URL 验证
       if (payload.type === 'url_verification') {

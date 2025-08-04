@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { LarkService } from './services/LarkService';
 import { LogService } from './services/LogService';
+import { AuthMiddleware } from './middleware/authMiddleware';
 import { HealthController } from './controllers/HealthController';
 import { MessageController } from './controllers/MessageController';
 import { WebhookController } from './controllers/WebhookController';
@@ -19,9 +20,10 @@ const BUILD_TIME = new Date().toISOString();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// 配置日志服务
+// 配置服务
 const logService = new LogService();
 const larkService = new LarkService();
+const authMiddleware = new AuthMiddleware();
 
 // 初始化控制器
 const healthController = new HealthController(larkService, logService);
@@ -80,8 +82,20 @@ app.get('/favicon.ico', (_req, res) => {
 // API路由
 app.get('/api/health', (req, res) => healthController.getHealthStatus(req, res));
 app.post('/api/message', (req, res) => messageController.sendCustomMessage(req, res));
-app.post('/api/webhook', (req, res) => webhookController.handleCallback(req, res));
-app.post('/api/callback', (req, res) => webhookController.handleCallback(req, res));
+
+// Webhook 路由 - 使用鉴权中间件
+app.post('/api/webhook', 
+  authMiddleware.logRequest.bind(authMiddleware),
+  authMiddleware.validateFeishuWebhook.bind(authMiddleware),
+  (req, res) => webhookController.handleCallback(req, res)
+);
+
+app.post('/api/callback', 
+  authMiddleware.logRequest.bind(authMiddleware),
+  authMiddleware.validateFeishuWebhook.bind(authMiddleware),
+  (req, res) => webhookController.handleCallback(req, res)
+);
+
 app.get('/api/logs', (req, res) => logController.getLogs(req, res));
 
 // 测试页面路由
@@ -146,9 +160,8 @@ app.get('/', (_req, res) => {
 });
 
 // 错误处理中间件
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: 'Internal Server Error' });
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  authMiddleware.errorHandler(err, req, res, next);
 });
 
 // 启动服务器

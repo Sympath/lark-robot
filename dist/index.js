@@ -9,6 +9,7 @@ const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
 const LarkService_1 = require("./services/LarkService");
 const LogService_1 = require("./services/LogService");
+const authMiddleware_1 = require("./middleware/authMiddleware");
 const HealthController_1 = require("./controllers/HealthController");
 const MessageController_1 = require("./controllers/MessageController");
 const WebhookController_1 = require("./controllers/WebhookController");
@@ -22,6 +23,7 @@ const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 const logService = new LogService_1.LogService();
 const larkService = new LarkService_1.LarkService();
+const authMiddleware = new authMiddleware_1.AuthMiddleware();
 const healthController = new HealthController_1.HealthController(larkService, logService);
 const messageController = new MessageController_1.MessageController(larkService, logService);
 const webhookController = new WebhookController_1.WebhookController(logService);
@@ -68,8 +70,8 @@ app.get('/favicon.ico', (_req, res) => {
 });
 app.get('/api/health', (req, res) => healthController.getHealthStatus(req, res));
 app.post('/api/message', (req, res) => messageController.sendCustomMessage(req, res));
-app.post('/api/webhook', (req, res) => webhookController.handleCallback(req, res));
-app.post('/api/callback', (req, res) => webhookController.handleCallback(req, res));
+app.post('/api/webhook', authMiddleware.logRequest.bind(authMiddleware), authMiddleware.validateFeishuWebhook.bind(authMiddleware), (req, res) => webhookController.handleCallback(req, res));
+app.post('/api/callback', authMiddleware.logRequest.bind(authMiddleware), authMiddleware.validateFeishuWebhook.bind(authMiddleware), (req, res) => webhookController.handleCallback(req, res));
 app.get('/api/logs', (req, res) => logController.getLogs(req, res));
 app.get('/case', (_req, res) => {
     try {
@@ -127,9 +129,8 @@ app.get('/case', (_req, res) => {
 app.get('/', (_req, res) => {
     res.redirect('/case');
 });
-app.use((err, _req, res, _next) => {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+app.use((err, req, res, next) => {
+    authMiddleware.errorHandler(err, req, res, next);
 });
 app.listen(port, () => {
     console.log('🚀 飞书 Webhook 服务器启动成功');

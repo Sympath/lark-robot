@@ -3,6 +3,7 @@ import { LogService } from '../services/LogService';
 export declare class WebhookController {
     private logService;
     private larkService;
+    private authService;
     constructor(logService: LogService);
     handleUrlVerification(req: Request, res: Response): Promise<void>;
     handleCallback(req: Request, res: Response): Promise<void>;

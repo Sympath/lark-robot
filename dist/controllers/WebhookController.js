@@ -2,26 +2,35 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebhookController = void 0;
 const LarkService_1 = require("../services/LarkService");
+const AuthService_1 = require("../services/AuthService");
 class WebhookController {
     constructor(logService) {
         this.logService = logService;
         this.larkService = new LarkService_1.LarkService();
+        this.authService = new AuthService_1.AuthService();
     }
     async handleUrlVerification(req, res) {
         try {
             const payload = req.body;
             console.log('🔍 URL 验证请求:', JSON.stringify(payload, null, 2));
-            if (payload.type === 'url_verification') {
-                console.log('✅ URL 验证成功，challenge:', payload.challenge);
-                this.logService.addLog('info', 'URL verification successful', { challenge: payload.challenge });
-                res.setHeader('Content-Type', 'application/json');
-                res.json({ challenge: payload.challenge });
+            const authResult = this.authService.validateUrlVerification(payload);
+            if (!authResult.isValid) {
+                console.error('❌ URL 验证失败:', authResult.error);
+                this.logService.addLog('error', 'URL verification failed', { error: authResult.error });
+                res.status(401).json({ error: authResult.error });
                 return;
             }
-            res.status(400).json({ error: 'Invalid verification request' });
+            console.log('✅ URL 验证成功，challenge:', authResult.payload.challenge);
+            this.logService.addLog('info', 'URL verification successful', {
+                challenge: authResult.payload.challenge,
+                timestamp: new Date().toISOString()
+            });
+            res.setHeader('Content-Type', 'application/json');
+            res.json({ challenge: authResult.payload.challenge });
         }
         catch (error) {
             console.error('URL 验证失败:', error);
+            this.logService.addLog('error', 'URL verification error', error instanceof Error ? error.message : 'Unknown error');
             res.status(500).json({ error: 'Verification failed' });
         }
     }
@@ -30,6 +39,15 @@ class WebhookController {
             const payload = req.body;
             this.logService.addLog('info', 'callback received', payload);
             console.log('🔍 收到 webhook 请求:', JSON.stringify(payload, null, 2));
+            const authResult = this.authService.validateRequest(req);
+            if (!authResult.isValid) {
+                console.error('❌ 请求验证失败:', authResult.error);
+                this.logService.addLog('error', 'Request validation failed', { error: authResult.error });
+                res.status(401).json({ error: authResult.error });
+                return;
+            }
+            console.log('✅ 请求验证成功');
+            this.logService.addLog('info', 'Request validation successful');
             if (payload.type === 'url_verification') {
                 this.logService.addLog('info', 'URL verification successful');
                 res.json({ challenge: payload.challenge });
