@@ -49,11 +49,6 @@ export class WebhookController {
 
   public async handleCallback(req: Request, res: Response): Promise<void> {
     try {
-      const payload: WebhookPayload = req.body;
-      
-      this.logService.addLog('info', 'callback received', payload);
-      console.log('🔍 收到 webhook 请求:', JSON.stringify(payload, null, 2));
-
       // 使用鉴权服务验证请求
       const authResult = this.authService.validateRequest(req);
       
@@ -66,6 +61,12 @@ export class WebhookController {
 
       console.log('✅ 请求验证成功');
       this.logService.addLog('info', 'Request validation successful');
+
+      // 获取验证后的有效载荷
+      const payload: WebhookPayload = authResult.payload || req.body;
+      
+      this.logService.addLog('info', 'callback received', payload);
+      console.log('🔍 收到 webhook 请求:', JSON.stringify(payload, null, 2));
 
       // 处理 URL 验证
       if (payload.type === 'url_verification') {

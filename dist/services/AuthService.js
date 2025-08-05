@@ -10,7 +10,28 @@ class AuthService {
     constructor() {
         this.verificationToken = auth_1.default.verificationToken;
         this.appSecret = auth_1.default.appSecret;
+        this.encryptKey = auth_1.default.encryptKey;
         this.config = auth_1.default;
+    }
+    decryptData(encryptedData) {
+        try {
+            const encryptedBuffer = Buffer.from(encryptedData, 'base64');
+            const iv = encryptedBuffer.slice(0, 16);
+            const ciphertext = encryptedBuffer.slice(16);
+            const key = crypto_1.default.createHash('sha256').update(this.encryptKey).digest();
+            const decipher = crypto_1.default.createDecipheriv('aes-256-cbc', key, iv);
+            decipher.setAutoPadding(false);
+            let decrypted = decipher.update(ciphertext, undefined, 'utf8');
+            decrypted += decipher.final('utf8');
+            const paddingLength = decrypted.charCodeAt(decrypted.length - 1);
+            if (paddingLength > 0 && paddingLength <= 16) {
+                decrypted = decrypted.slice(0, decrypted.length - paddingLength);
+            }
+            return decrypted;
+        }
+        catch (error) {
+            throw new Error(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     }
     validateToken(payload) {
         try {
@@ -70,6 +91,37 @@ class AuthService {
             return {
                 isValid: false,
                 error: `Signature validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
+            };
+        }
+    }
+    validateEncryptedRequest(req) {
+        try {
+            const encryptedData = req.body.encrypted_data || req.body.encrypt;
+            if (!encryptedData) {
+                return {
+                    isValid: false,
+                    error: 'Missing encrypted_data or encrypt in request body'
+                };
+            }
+            const decryptedData = this.decryptData(encryptedData);
+            const payload = JSON.parse(decryptedData);
+            if (payload.type === 'url_verification') {
+                return this.validateUrlVerification(payload);
+            }
+            else if (payload.schema === '2.0') {
+                return this.validateEventCallback(payload);
+            }
+            else {
+                return {
+                    isValid: false,
+                    error: 'Invalid decrypted payload structure'
+                };
+            }
+        }
+        catch (error) {
+            return {
+                isValid: false,
+                error: `Encrypted request validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
             };
         }
     }
@@ -143,6 +195,17 @@ class AuthService {
                     isValid: false,
                     error: 'Empty request body'
                 };
+            }
+            if (payload.encrypted_data || payload.encrypt) {
+                if (this.config.enableEncryption) {
+                    return this.validateEncryptedRequest(req);
+                }
+                else {
+                    return {
+                        isValid: false,
+                        error: 'Encrypted request received but encryption is not enabled'
+                    };
+                }
             }
             if (this.config.enableTokenValidation) {
                 const tokenResult = this.validateToken(payload);

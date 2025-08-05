@@ -3,10 +3,12 @@ export interface AuthConfig {
   appId: string;
   appSecret: string;
   verificationToken: string;
+  encryptKey: string;
   
   // 安全配置
   enableSignatureValidation: boolean;
   enableTokenValidation: boolean;
+  enableEncryption: boolean;
   enableRequestLogging: boolean;
   
   // 超时配置
@@ -23,10 +25,12 @@ const authConfig: AuthConfig = {
   appId: process.env.FEISHU_APP_ID || 'cli_a8079e4490b81013',
   appSecret: process.env.FEISHU_APP_SECRET || 'GAUZ0MUBTqW2TRMjx2jU3ffcQhcttQSI',
   verificationToken: process.env.FEISHU_VERIFICATION_TOKEN || 'glqekPS9pO55cF0bHfSEZbogArkR8inu',
+  encryptKey: process.env.FEISHU_ENCRYPT_KEY || 'qsJboodT6Or4STWCp9DqHfbwWrG5TqPb',
   
   // 安全配置
   enableSignatureValidation: process.env.ENABLE_SIGNATURE_VALIDATION === 'true',
   enableTokenValidation: process.env.ENABLE_TOKEN_VALIDATION !== 'false', // 默认启用
+  enableEncryption: process.env.ENABLE_ENCRYPTION !== 'false', // 默认启用
   enableRequestLogging: process.env.ENABLE_REQUEST_LOGGING !== 'false', // 默认启用
   
   // 超时配置（毫秒）

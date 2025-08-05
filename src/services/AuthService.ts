@@ -10,12 +10,48 @@ export interface AuthResult {
 export class AuthService {
   private readonly verificationToken: string;
   private readonly appSecret: string;
+  private readonly encryptKey: string;
   private readonly config: typeof authConfig;
 
   constructor() {
     this.verificationToken = authConfig.verificationToken;
     this.appSecret = authConfig.appSecret;
+    this.encryptKey = authConfig.encryptKey;
     this.config = authConfig;
+  }
+
+  /**
+   * 解密飞书加密的数据
+   */
+  private decryptData(encryptedData: string): string {
+    try {
+      // 解码 base64
+      const encryptedBuffer = Buffer.from(encryptedData, 'base64');
+      
+      // 提取 IV（前16字节）
+      const iv = encryptedBuffer.slice(0, 16);
+      const ciphertext = encryptedBuffer.slice(16);
+      
+      // 使用 SHA256 对 Encrypt Key 进行哈希，得到密钥 key
+      const key = crypto.createHash('sha256').update(this.encryptKey).digest();
+      
+      // 使用 AES-256-CBC 解密
+      const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+      decipher.setAutoPadding(false);
+      
+      let decrypted = decipher.update(ciphertext, undefined, 'utf8');
+      decrypted += decipher.final('utf8');
+      
+      // 移除 PKCS7 padding
+      const paddingLength = decrypted.charCodeAt(decrypted.length - 1);
+      if (paddingLength > 0 && paddingLength <= 16) {
+        decrypted = decrypted.slice(0, decrypted.length - paddingLength);
+      }
+      
+      return decrypted;
+    } catch (error) {
+      throw new Error(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
@@ -97,6 +133,43 @@ export class AuthService {
       return {
         isValid: false,
         error: `Signature validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * 验证加密的请求
+   */
+  public validateEncryptedRequest(req: any): AuthResult {
+    try {
+      const encryptedData = req.body.encrypted_data || req.body.encrypt;
+      
+      if (!encryptedData) {
+        return {
+          isValid: false,
+          error: 'Missing encrypted_data or encrypt in request body'
+        };
+      }
+
+      // 解密数据
+      const decryptedData = this.decryptData(encryptedData);
+      const payload = JSON.parse(decryptedData);
+
+      // 验证解密后的数据
+      if (payload.type === 'url_verification') {
+        return this.validateUrlVerification(payload);
+      } else if (payload.schema === '2.0') {
+        return this.validateEventCallback(payload);
+      } else {
+        return {
+          isValid: false,
+          error: 'Invalid decrypted payload structure'
+        };
+      }
+    } catch (error) {
+      return {
+        isValid: false,
+        error: `Encrypted request validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }
@@ -194,6 +267,18 @@ export class AuthService {
           isValid: false,
           error: 'Empty request body'
         };
+      }
+
+      // 检查是否是加密请求
+      if (payload.encrypted_data || payload.encrypt) {
+        if (this.config.enableEncryption) {
+          return this.validateEncryptedRequest(req);
+        } else {
+          return {
+            isValid: false,
+            error: 'Encrypted request received but encryption is not enabled'
+          };
+        }
       }
 
       // 根据配置决定是否进行 Token 验证
