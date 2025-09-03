@@ -17,6 +17,7 @@ export class EventDispatcherService {
       // 创建 EventDispatcher 实例
       this.eventDispatcher = new EventDispatcher({
         encryptKey: authConfig.encryptKey,
+        verificationToken: authConfig.verificationToken
       });
 
       // 注册事件处理器
@@ -116,6 +117,8 @@ export class EventDispatcherService {
       // 处理 URL 验证请求
       if ((payload as any).type === 'url_verification') {
         const result = await this.handleUrlVerification(payload);
+        ctx.status = 200;
+        ctx.set('Content-Type', 'application/json');
         ctx.body = result;
         return;
       }
@@ -133,7 +136,9 @@ export class EventDispatcherService {
       this.logService.addLog('info', 'EventDispatcher processing completed', { result });
       
       // 返回结果
-      ctx.body = result;
+      ctx.status = 200;
+      ctx.set('Content-Type', 'application/json');
+      ctx.body = result || { success: true };
       
     } catch (error) {
       console.error('❌ EventDispatcher 处理失败:', error);

@@ -5,13 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HealthController = void 0;
 const config_1 = __importDefault(require("../config"));
+// 动态获取版本号
 const getVersion = () => {
     try {
         const packageJson = require('../../package.json');
         return packageJson.version;
     }
     catch (error) {
-        return '1.0.0';
+        return '1.0.0'; // 默认版本号
     }
 };
 class HealthController {

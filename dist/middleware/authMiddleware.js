@@ -5,9 +5,13 @@ const AuthService_1 = require("../services/AuthService");
 const LogService_1 = require("../services/LogService");
 class AuthMiddleware {
     constructor() {
+        /**
+         * 验证飞书 Webhook 请求的中间件
+         */
         this.validateFeishuWebhook = async (ctx, next) => {
             try {
                 console.log('🔐 开始验证飞书 Webhook 请求');
+                // 验证请求
                 const authResult = this.authService.validateRequest(ctx);
                 if (!authResult.isValid) {
                     console.error('❌ Webhook 验证失败:', authResult.error);
@@ -28,6 +32,7 @@ class AuthMiddleware {
                     type: ctx.request.body?.type || ctx.request.body?.schema,
                     timestamp: new Date().toISOString()
                 });
+                // 将验证结果添加到上下文对象中
                 ctx.state.authResult = authResult;
                 await next();
             }
@@ -41,6 +46,9 @@ class AuthMiddleware {
                 };
             }
         };
+        /**
+         * 验证签名（可选，用于更严格的安全验证）
+         */
         this.validateSignature = async (ctx, next) => {
             try {
                 console.log('🔐 开始验证请求签名');
@@ -72,6 +80,9 @@ class AuthMiddleware {
                 };
             }
         };
+        /**
+         * 记录请求信息的中间件
+         */
         this.logRequest = async (ctx, next) => {
             const requestInfo = {
                 method: ctx.method,
@@ -90,6 +101,9 @@ class AuthMiddleware {
             this.logService.addLog('info', 'Request received', requestInfo);
             await next();
         };
+        /**
+         * 错误处理中间件
+         */
         this.errorHandler = async (ctx, next) => {
             try {
                 await next();

@@ -32,11 +32,15 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebhookController = void 0;
 const LarkService_1 = require("../services/LarkService");
 const AuthService_1 = require("../services/AuthService");
 const EventDispatcherService_1 = require("../services/EventDispatcherService");
+const auth_1 = __importDefault(require("../config/auth"));
 const lark = __importStar(require("@larksuiteoapi/node-sdk"));
 class WebhookController {
     constructor(logService) {
@@ -45,10 +49,12 @@ class WebhookController {
         this.authService = new AuthService_1.AuthService();
         this.eventDispatcherService = new EventDispatcherService_1.EventDispatcherService(logService);
     }
+    // 专门处理飞书 URL 验证的端点
     async handleUrlVerification(ctx) {
         try {
             const payload = ctx.request.body;
             console.log('🔍 URL 验证请求:', JSON.stringify(payload, null, 2));
+            // 使用鉴权服务验证请求
             const authResult = this.authService.validateUrlVerification(payload);
             if (!authResult.isValid) {
                 console.error('❌ URL 验证失败:', authResult.error);
@@ -62,6 +68,7 @@ class WebhookController {
                 challenge: authResult.payload.challenge,
                 timestamp: new Date().toISOString()
             });
+            // 返回正确的 JSON 格式
             ctx.set('Content-Type', 'application/json');
             ctx.body = { challenge: authResult.payload.challenge };
         }
@@ -72,6 +79,7 @@ class WebhookController {
             ctx.body = { error: 'Verification failed' };
         }
     }
+    // 使用 EventDispatcher 处理 webhook 请求
     async handleCallbackWithEventDispatcher(ctx) {
         try {
             console.log('🔍 使用 EventDispatcher 处理 webhook 请求');
@@ -81,6 +89,7 @@ class WebhookController {
                 ctx.body = { error: 'EventDispatcher not initialized' };
                 return;
             }
+            // 使用 EventDispatcher 处理请求
             await this.eventDispatcherService.handleWebhookRequest(ctx);
         }
         catch (error) {
@@ -92,6 +101,7 @@ class WebhookController {
     }
     async handleCallback(ctx) {
         try {
+            // 使用鉴权服务验证请求
             const authResult = this.authService.validateRequest(ctx);
             if (!authResult.isValid) {
                 console.error('❌ 请求验证失败:', authResult.error);
@@ -102,14 +112,17 @@ class WebhookController {
             }
             console.log('✅ 请求验证成功');
             this.logService.addLog('info', 'Request validation successful');
+            // 获取验证后的有效载荷
             const payload = authResult.payload || ctx.request.body;
             this.logService.addLog('info', 'callback received', payload);
             console.log('🔍 收到 webhook 请求:', JSON.stringify(payload, null, 2));
+            // 处理 URL 验证
             if (payload.type === 'url_verification') {
                 this.logService.addLog('info', 'URL verification successful');
                 ctx.body = { challenge: payload.challenge };
                 return;
             }
+            // 处理事件回调 - 飞书使用 schema 2.0 格式
             if (payload.schema === '2.0' && payload.event) {
                 const event = payload.event;
                 console.log('🔍 事件详情:', JSON.stringify(event, null, 2));
@@ -118,15 +131,18 @@ class WebhookController {
                 this.logService.addLog('info', `Event received: ${event.type}`, event);
                 try {
                     console.log('🔍 开始处理事件类型:', event.type);
+                    // 根据事件类型处理
                     switch (event.type) {
                         case 'message':
                             console.log('📝 处理消息事件');
                             this.logService.addLog('info', 'Message event processed', event);
+                            // 自动回复消息
                             await this.autoReplyToMessage(event);
                             break;
                         case 'user_added':
                             console.log('👤 处理用户添加事件');
                             this.logService.addLog('info', 'User added event processed', event);
+                            // 发送欢迎消息
                             await this.sendWelcomeMessage(event);
                             break;
                         case 'user_removed':
@@ -136,16 +152,19 @@ class WebhookController {
                         case 'interactive':
                             console.log('🔘 处理交互事件');
                             this.logService.addLog('info', 'Interactive event processed', event);
+                            // 处理卡片按钮点击
                             await this.handleCardInteraction(event);
                             break;
                         case 'card.action.trigger':
                             console.log('🔘 处理卡片动作触发事件');
                             this.logService.addLog('info', 'Card action trigger event processed', event);
+                            // 处理卡片按钮点击
                             await this.handleCardInteraction(event);
                             break;
                         default:
                             console.log('❓ 未知事件类型:', event.type);
                             this.logService.addLog('info', `Unknown event type: ${event.type}`, event);
+                            // 如果没有明确的类型，但有 action，也当作卡片交互处理
                             if (event.action) {
                                 console.log('🔍 检测到 action，当作卡片交互处理');
                                 await this.handleCardInteraction(event);
@@ -158,21 +177,26 @@ class WebhookController {
                 catch (error) {
                     console.error('❌ 事件处理过程中发生错误:', error);
                     this.logService.addLog('error', 'Event processing failed', error instanceof Error ? error.message : 'Unknown error');
+                    // 即使处理失败，也返回成功响应，避免飞书重试
                     ctx.body = { success: true, error: error instanceof Error ? error.message : 'Unknown error' };
                     return;
                 }
             }
+            // 处理旧格式的事件回调
             if (payload.type === 'event_callback' && payload.event) {
                 const event = payload.event;
                 this.logService.addLog('info', `Event received (old format): ${event.type}`, event);
                 try {
+                    // 根据事件类型处理
                     switch (event.type) {
                         case 'message':
                             this.logService.addLog('info', 'Message event processed', event);
+                            // 自动回复消息
                             await this.autoReplyToMessage(event);
                             break;
                         case 'user_added':
                             this.logService.addLog('info', 'User added event processed', event);
+                            // 发送欢迎消息
                             await this.sendWelcomeMessage(event);
                             break;
                         case 'user_removed':
@@ -180,14 +204,17 @@ class WebhookController {
                             break;
                         case 'interactive':
                             this.logService.addLog('info', 'Interactive event processed', event);
+                            // 处理卡片按钮点击
                             await this.handleCardInteraction(event);
                             break;
                         case 'card.action.trigger':
                             this.logService.addLog('info', 'Card action trigger event processed', event);
+                            // 处理卡片按钮点击
                             await this.handleCardInteraction(event);
                             break;
                         default:
                             this.logService.addLog('info', `Unknown event type: ${event.type}`, event);
+                            // 如果没有明确的类型，但有 action，也当作卡片交互处理
                             if (event.action) {
                                 console.log('🔍 检测到 action，当作卡片交互处理');
                                 await this.handleCardInteraction(event);
@@ -200,10 +227,12 @@ class WebhookController {
                 catch (error) {
                     console.error('❌ 旧格式事件处理过程中发生错误:', error);
                     this.logService.addLog('error', 'Old format event processing failed', error instanceof Error ? error.message : 'Unknown error');
+                    // 即使处理失败，也返回成功响应，避免飞书重试
                     ctx.body = { success: true, error: error instanceof Error ? error.message : 'Unknown error' };
                     return;
                 }
             }
+            // 如果没有匹配的格式，返回错误
             ctx.status = 400;
             ctx.body = { error: 'Invalid webhook payload' };
         }
@@ -222,6 +251,7 @@ class WebhookController {
             ...ctx.request.body
         };
     }
+    // 自动回复消息
     async autoReplyToMessage(event) {
         try {
             if (event.message && event.message.content) {
@@ -239,6 +269,7 @@ class WebhookController {
             this.logService.addLog('error', 'Failed to send auto reply', error instanceof Error ? error.message : 'Unknown error');
         }
     }
+    // 发送欢迎消息
     async sendWelcomeMessage(event) {
         try {
             if (event.operator_id && event.operator_id.open_id) {
@@ -256,23 +287,29 @@ class WebhookController {
             this.logService.addLog('error', 'Failed to send welcome message', error instanceof Error ? error.message : 'Unknown error');
         }
     }
+    // 处理卡片交互事件
     async handleCardInteraction(event) {
         try {
             console.log('🔘 卡片交互事件:', JSON.stringify(event, null, 2));
+            // 飞书交互事件的格式
             let buttonValue = null;
             let userId = null;
             let chatId = null;
+            // 处理不同的交互事件格式
             if (event.action && event.action.value) {
+                // 直接格式
                 buttonValue = event.action.value;
                 userId = event.user_id || event.open_id || event.operator?.user_id;
                 chatId = event.chat_id || event.context?.open_chat_id;
             }
             else if (event.interactive && event.interactive.action) {
+                // 嵌套格式
                 buttonValue = event.interactive.action.value;
                 userId = event.user_id || event.open_id || event.operator?.user_id;
                 chatId = event.chat_id || event.context?.open_chat_id;
             }
             else if (event.message && event.message.interactive) {
+                // 消息中的交互格式
                 buttonValue = event.message.interactive.action.value;
                 userId = event.user_id || event.open_id || event.operator?.user_id;
                 chatId = event.message.chat_id || event.context?.open_chat_id;
@@ -287,10 +324,12 @@ class WebhookController {
                     eventType: 'card_interaction'
                 };
                 this.logService.addLog('info', 'Card button clicked', logData);
+                // 输出到文件日志
                 const fs = require('fs');
                 const logEntry = `${new Date().toISOString()} - 卡片按钮点击: ${JSON.stringify(logData, null, 2)}\n`;
                 fs.appendFileSync('card_interactions.log', logEntry);
                 console.log('📝 日志已写入文件: card_interactions.log');
+                // 根据按钮值处理不同的操作
                 let replyMessage = '';
                 let toastMessage = '';
                 switch (buttonValue.key) {
@@ -318,6 +357,7 @@ class WebhookController {
                         replyMessage = `🔘 你点击了按钮，参数: ${JSON.stringify(buttonValue)}`;
                         toastMessage = '按钮点击成功';
                 }
+                // 发送回复消息
                 const messageRequest = {
                     receive_id: chatId,
                     receive_id_type: 'chat_id',
@@ -325,7 +365,9 @@ class WebhookController {
                     msg_type: 'text'
                 };
                 await this.larkService.sendMessage(messageRequest);
+                // 发送用户通知
                 await this.sendUserNotification(userId, toastMessage);
+                // 发送Toast通知
                 await this.sendToastNotification(userId, toastMessage);
                 this.logService.addLog('info', 'Card interaction reply sent', { replyMessage, toastMessage });
             }
@@ -339,12 +381,14 @@ class WebhookController {
             console.error('❌ 处理卡片交互失败:', error);
         }
     }
+    // 发送用户通知消息
     async sendUserNotification(userId, message) {
         try {
             if (!this.larkService.isSDKLoaded()) {
                 console.log('⚠️ SDK 未加载，跳过通知发送');
                 return;
             }
+            // 发送私聊消息给用户
             const messageRequest = {
                 receive_id: userId,
                 receive_id_type: 'user_id',
@@ -353,28 +397,33 @@ class WebhookController {
             };
             await this.larkService.sendMessage(messageRequest);
             console.log('✅ 用户通知发送成功:', message);
+            // 记录到日志文件
             const fs = require('fs');
             const notificationLog = `${new Date().toISOString()} - 用户通知: ${message} -> 用户: ${userId}\n`;
             fs.appendFileSync('user_notifications.log', notificationLog);
         }
         catch (error) {
             console.error('❌ 发送用户通知失败:', error);
+            // 记录错误到日志文件
             const fs = require('fs');
             const errorLog = `${new Date().toISOString()} - 用户通知发送失败: ${error instanceof Error ? error.message : 'Unknown error'} -> 用户: ${userId}\n`;
             fs.appendFileSync('notification_errors.log', errorLog);
         }
     }
+    // 发送Toast通知
     async sendToastNotification(userId, message) {
         try {
             if (!this.larkService.isSDKLoaded()) {
                 console.log('⚠️ SDK 未加载，跳过toast通知发送');
                 return;
             }
+            // 使用飞书SDK发送toast通知
             const lark = require('@larksuiteoapi/node-sdk');
             const client = new lark.Client({
                 appId: 'cli_a8079e4490b81013',
                 appSecret: 'GAUZ0MUBTqW2TRMjx2jU3ffcQhcttQSI',
             });
+            // 发送toast通知
             await client.im.message.create({
                 params: {
                     receive_id_type: 'user_id',
@@ -392,35 +441,68 @@ class WebhookController {
                 },
             });
             console.log('✅ Toast通知发送成功:', message);
+            // 记录到toast日志文件
             const fs = require('fs');
             const toastLog = `${new Date().toISOString()} - Toast 提醒: ${message} -> 用户: ${userId}\n`;
             fs.appendFileSync('toast_notifications.log', toastLog);
         }
         catch (error) {
             console.error('❌ 发送Toast通知失败:', error);
+            // 记录错误到日志文件
             const fs = require('fs');
             const errorLog = `${new Date().toISOString()} - Toast通知发送失败: ${error instanceof Error ? error.message : 'Unknown error'} -> 用户: ${userId}\n`;
             fs.appendFileSync('toast_errors.log', errorLog);
         }
     }
+    /**
+     * 获取 Koa 适配器
+     */
     getKoaAdapter() {
         const eventDispatcher = this.eventDispatcherService.getEventDispatcher();
         return async (ctx) => {
             try {
+                const payload = ctx.request.body;
+                // 手动处理 URL 验证请求
+                if (payload.type === 'url_verification') {
+                    console.log('🔍 处理 URL 验证请求:', JSON.stringify(payload, null, 2));
+                    // 验证 token
+                    if (payload.token !== auth_1.default.verificationToken) {
+                        console.error('❌ URL 验证失败: Invalid token');
+                        ctx.status = 401;
+                        ctx.set('Content-Type', 'application/json');
+                        ctx.body = { error: 'Invalid verification token' };
+                        return;
+                    }
+                    console.log('✅ URL 验证成功，challenge:', payload.challenge);
+                    // 返回 challenge
+                    ctx.status = 200;
+                    ctx.set('Content-Type', 'application/json');
+                    ctx.body = { challenge: payload.challenge };
+                    return;
+                }
+                // 构造 EventDispatcher 需要的数据格式
                 const eventData = {
-                    body: ctx.request.body,
+                    body: payload,
                     headers: ctx.headers
                 };
+                // 使用 EventDispatcher 处理其他事件
                 const result = await eventDispatcher.invoke(eventData);
-                ctx.body = result;
+                // 设置响应
+                ctx.status = 200;
+                ctx.set('Content-Type', 'application/json');
+                ctx.body = result || { success: true };
             }
             catch (error) {
                 console.error('❌ EventDispatcher 处理失败:', error);
                 ctx.status = 500;
+                ctx.set('Content-Type', 'application/json');
                 ctx.body = { error: 'EventDispatcher processing failed' };
             }
         };
     }
+    /**
+     * 获取 Express 适配器（兼容性保留）
+     */
     getExpressAdapter() {
         const eventDispatcher = this.eventDispatcherService.getEventDispatcher();
         return lark.adaptExpress(eventDispatcher, {

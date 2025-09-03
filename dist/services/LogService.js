@@ -14,6 +14,7 @@ class LogService {
             data
         };
         this.logs.unshift(logEntry);
+        // 保持最多指定数量的日志
         if (this.logs.length > this.maxLogs) {
             this.logs.splice(this.maxLogs);
         }

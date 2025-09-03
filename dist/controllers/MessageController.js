@@ -8,6 +8,7 @@ class MessageController {
     }
     async sendDefaultMessage(ctx) {
         try {
+            // 直接测试 SDK，绕过 LarkService
             const lark = require('@larksuiteoapi/node-sdk');
             const client = new lark.Client({
                 appId: 'cli_a8079e4490b81013',
@@ -49,13 +50,16 @@ class MessageController {
     async sendCustomMessage(ctx) {
         try {
             const { receive_id, template_id, template_variable, receive_id_type = 'user_id', content, msg_type = 'text', type } = ctx.request.body;
+            // 处理前端发送的type字段
             const actualMsgType = type === 'card' ? 'interactive' : msg_type;
+            // 如果是卡片消息，使用正确的卡片格式
             if (actualMsgType === 'interactive') {
                 const lark = require('@larksuiteoapi/node-sdk');
                 const client = new lark.Client({
                     appId: 'cli_a8079e4490b81013',
                     appSecret: 'GAUZ0MUBTqW2TRMjx2jU3ffcQhcttQSI',
                 });
+                // 构建正确的卡片格式
                 const cardContent = {
                     config: {
                         wide_screen_mode: true
@@ -111,6 +115,7 @@ class MessageController {
                 };
                 return;
             }
+            // 如果是模板消息，使用 sendCardMessage
             if (template_id) {
                 const messageRequest = {
                     receive_id,
@@ -127,8 +132,9 @@ class MessageController {
                 };
                 return;
             }
+            // 默认文本消息
             const messageRequest = {
-                receive_id: receive_id || 'c5bf39fa',
+                receive_id: receive_id || 'c5bf39fa', // 使用默认用户ID
                 content: JSON.stringify({ text: content || 'default message' }),
                 msg_type: actualMsgType,
                 receive_id_type
@@ -154,6 +160,7 @@ class MessageController {
     }
     async testSDKDirect(ctx) {
         try {
+            // 直接测试 SDK，绕过 LarkService
             const lark = require('@larksuiteoapi/node-sdk');
             const client = new lark.Client({
                 appId: 'cli_a8079e4490b81013',

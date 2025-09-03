@@ -15,7 +15,13 @@ export declare class WebhookController {
     private handleCardInteraction;
     private sendUserNotification;
     private sendToastNotification;
+    /**
+     * 获取 Koa 适配器
+     */
     getKoaAdapter(): (ctx: Koa.Context) => Promise<void>;
+    /**
+     * 获取 Express 适配器（兼容性保留）
+     */
     getExpressAdapter(): (req: any, res: any) => Promise<void>;
 }
 //# sourceMappingURL=WebhookController.d.ts.map

@@ -9,6 +9,15 @@
     "dev": "ts-node src/index.ts",
     "watch": "tsc --watch",
     "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "postbuild": "echo 'Build completed successfully'",
+    "start:prod": "NODE_ENV=production node dist/index.js",
+    "start:dev": "NODE_ENV=development ts-node src/index.ts",
+    "docker:build": "docker build -t feishu-webhook .",
+    "docker:run": "docker run -p 3000:3000 feishu-webhook",
+    "nginx:start": "sudo nginx -c $(pwd)/nginx.conf",
+    "nginx:stop": "sudo nginx -s stop",
+    "nginx:reload": "sudo nginx -s reload",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

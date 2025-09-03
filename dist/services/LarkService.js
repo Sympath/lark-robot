@@ -13,11 +13,14 @@ class LarkService {
     }
     async initializeClient() {
         try {
+            // 使用 require 导入 SDK
             const lark = require('@larksuiteoapi/node-sdk');
+            // 构建 API Client
             this.client = new lark.Client({
                 appId: config_1.default.appId,
                 appSecret: config_1.default.appSecret,
             });
+            // 等待一小段时间确保 SDK 完全初始化
             await new Promise(resolve => setTimeout(resolve, 100));
             console.log('✅ 飞书 SDK 加载成功');
             this.initialized = true;
@@ -32,6 +35,7 @@ class LarkService {
         return this.client !== null && this.client.im !== undefined && this.initialized;
     }
     async sendMessage(messageRequest) {
+        // 确保 SDK 已初始化
         if (!this.initialized) {
             await this.initializeClient();
         }
@@ -39,6 +43,7 @@ class LarkService {
             throw new Error('Lark SDK not loaded');
         }
         try {
+            // 确保 client 已经初始化
             if (!this.client.im || !this.client.im.message) {
                 throw new Error('Lark SDK not properly initialized');
             }
@@ -48,6 +53,7 @@ class LarkService {
             console.log('- client.im.message 类型:', typeof this.client.im.message);
             console.log('- client.im.message.create 类型:', typeof this.client.im.message.create);
             console.log('- client.im.message 的所有方法:', Object.keys(this.client.im.message));
+            // 通过 Client 调用「发送消息」接口
             const res = await this.client.im.message.create({
                 params: {
                     receive_id_type: messageRequest.receive_id_type || 'user_id',
@@ -66,6 +72,7 @@ class LarkService {
         }
     }
     async sendCardMessage(messageRequest) {
+        // 确保 SDK 已初始化
         if (!this.initialized) {
             await this.initializeClient();
         }
