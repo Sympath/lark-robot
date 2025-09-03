@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import Koa from 'koa';
 import authConfig from '../config/auth';
 
 export interface AuthResult {
@@ -91,11 +92,11 @@ export class AuthService {
    * 验证飞书 Webhook 请求的签名
    * 飞书使用 HMAC-SHA256 算法进行签名验证
    */
-  public validateSignature(req: any): AuthResult {
+  public validateSignature(ctx: Koa.Context): AuthResult {
     try {
-      const timestamp = req.headers['x-lark-request-timestamp'];
-      const nonce = req.headers['x-lark-request-nonce'];
-      const signature = req.headers['x-lark-signature'];
+      const timestamp = ctx.headers['x-lark-request-timestamp'];
+      const nonce = ctx.headers['x-lark-request-nonce'];
+      const signature = ctx.headers['x-lark-signature'];
 
       // 检查必要的头部字段
       if (!timestamp || !nonce || !signature) {
@@ -106,7 +107,7 @@ export class AuthService {
       }
 
       // 获取请求体
-      const body = JSON.stringify(req.body);
+      const body = JSON.stringify(ctx.request.body);
       
       // 构造签名字符串
       const signString = `${timestamp}\n${nonce}\n${body}\n`;
@@ -127,7 +128,7 @@ export class AuthService {
 
       return {
         isValid: true,
-        payload: req.body
+        payload: ctx.request.body
       };
     } catch (error) {
       return {
@@ -140,9 +141,9 @@ export class AuthService {
   /**
    * 验证加密的请求
    */
-  public validateEncryptedRequest(req: any): AuthResult {
+  public validateEncryptedRequest(ctx: Koa.Context): AuthResult {
     try {
-      const encryptedData = req.body.encrypted_data || req.body.encrypt;
+      const encryptedData = (ctx.request.body as any)?.encrypted_data || (ctx.request.body as any)?.encrypt;
       
       if (!encryptedData) {
         return {
@@ -257,9 +258,9 @@ export class AuthService {
   /**
    * 综合验证方法
    */
-  public validateRequest(req: any): AuthResult {
+  public validateRequest(ctx: Koa.Context): AuthResult {
     try {
-      const payload = req.body;
+      const payload = ctx.request.body;
 
       // 如果没有请求体，返回错误
       if (!payload) {
@@ -270,9 +271,9 @@ export class AuthService {
       }
 
       // 检查是否是加密请求
-      if (payload.encrypted_data || payload.encrypt) {
+      if ((payload as any).encrypted_data || (payload as any).encrypt) {
         if (this.config.enableEncryption) {
-          return this.validateEncryptedRequest(req);
+          return this.validateEncryptedRequest(ctx);
         } else {
           return {
             isValid: false,
@@ -291,16 +292,16 @@ export class AuthService {
 
       // 根据配置决定是否进行签名验证
       if (this.config.enableSignatureValidation) {
-        const signatureResult = this.validateSignature(req);
+        const signatureResult = this.validateSignature(ctx);
         if (!signatureResult.isValid) {
           return signatureResult;
         }
       }
 
       // 根据请求类型进行验证
-      if (payload.type === 'url_verification') {
+      if ((payload as any).type === 'url_verification') {
         return this.validateUrlVerification(payload);
-      } else if (payload.schema === '2.0') {
+      } else if ((payload as any).schema === '2.0') {
         return this.validateEventCallback(payload);
       } else {
         return {

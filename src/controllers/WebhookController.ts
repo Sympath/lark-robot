@@ -1,24 +1,28 @@
-import { Request, Response } from 'express';
+import Koa from 'koa';
 import { WebhookPayload, MessageRequest } from '../types';
 import { LogService } from '../services/LogService';
 import { LarkService } from '../services/LarkService';
 import { AuthService } from '../services/AuthService';
+import { EventDispatcherService } from '../services/EventDispatcherService';
+import * as lark from '@larksuiteoapi/node-sdk';
 
 export class WebhookController {
   private logService: LogService;
   private larkService: LarkService;
   private authService: AuthService;
+  private eventDispatcherService: EventDispatcherService;
 
   constructor(logService: LogService) {
     this.logService = logService;
     this.larkService = new LarkService();
     this.authService = new AuthService();
+    this.eventDispatcherService = new EventDispatcherService(logService);
   }
 
   // 专门处理飞书 URL 验证的端点
-  public async handleUrlVerification(req: Request, res: Response): Promise<void> {
+  public async handleUrlVerification(ctx: Koa.Context): Promise<void> {
     try {
-      const payload = req.body;
+      const payload = ctx.request.body;
       console.log('🔍 URL 验证请求:', JSON.stringify(payload, null, 2));
       
       // 使用鉴权服务验证请求
@@ -27,7 +31,8 @@ export class WebhookController {
       if (!authResult.isValid) {
         console.error('❌ URL 验证失败:', authResult.error);
         this.logService.addLog('error', 'URL verification failed', { error: authResult.error });
-        res.status(401).json({ error: authResult.error });
+        ctx.status = 401;
+        ctx.body = { error: authResult.error };
         return;
       }
 
@@ -38,24 +43,49 @@ export class WebhookController {
       });
       
       // 返回正确的 JSON 格式
-      res.setHeader('Content-Type', 'application/json');
-      res.json({ challenge: authResult.payload.challenge });
+      ctx.set('Content-Type', 'application/json');
+      ctx.body = { challenge: authResult.payload.challenge };
     } catch (error) {
       console.error('URL 验证失败:', error);
       this.logService.addLog('error', 'URL verification error', error instanceof Error ? error.message : 'Unknown error');
-      res.status(500).json({ error: 'Verification failed' });
+      ctx.status = 500;
+      ctx.body = { error: 'Verification failed' };
     }
   }
 
-  public async handleCallback(req: Request, res: Response): Promise<void> {
+  // 使用 EventDispatcher 处理 webhook 请求
+  public async handleCallbackWithEventDispatcher(ctx: Koa.Context): Promise<void> {
+    try {
+      console.log('🔍 使用 EventDispatcher 处理 webhook 请求');
+      
+      if (!this.eventDispatcherService.isInitialized()) {
+        console.error('❌ EventDispatcher 未初始化');
+        ctx.status = 500;
+        ctx.body = { error: 'EventDispatcher not initialized' };
+        return;
+      }
+
+      // 使用 EventDispatcher 处理请求
+      await this.eventDispatcherService.handleWebhookRequest(ctx);
+      
+    } catch (error) {
+      console.error('❌ EventDispatcher 处理失败:', error);
+      this.logService.addLog('error', 'EventDispatcher processing failed', error instanceof Error ? error.message : 'Unknown error');
+      ctx.status = 500;
+      ctx.body = { error: 'EventDispatcher processing failed' };
+    }
+  }
+
+  public async handleCallback(ctx: Koa.Context): Promise<void> {
     try {
       // 使用鉴权服务验证请求
-      const authResult = this.authService.validateRequest(req);
+      const authResult = this.authService.validateRequest(ctx);
       
       if (!authResult.isValid) {
         console.error('❌ 请求验证失败:', authResult.error);
         this.logService.addLog('error', 'Request validation failed', { error: authResult.error });
-        res.status(401).json({ error: authResult.error });
+        ctx.status = 401;
+        ctx.body = { error: authResult.error };
         return;
       }
 
@@ -63,7 +93,7 @@ export class WebhookController {
       this.logService.addLog('info', 'Request validation successful');
 
       // 获取验证后的有效载荷
-      const payload: WebhookPayload = authResult.payload || req.body;
+      const payload: WebhookPayload = authResult.payload || ctx.request.body;
       
       this.logService.addLog('info', 'callback received', payload);
       console.log('🔍 收到 webhook 请求:', JSON.stringify(payload, null, 2));
@@ -71,7 +101,7 @@ export class WebhookController {
       // 处理 URL 验证
       if (payload.type === 'url_verification') {
         this.logService.addLog('info', 'URL verification successful');
-        res.json({ challenge: payload.challenge });
+        ctx.body = { challenge: payload.challenge };
         return;
       }
 
@@ -133,13 +163,13 @@ export class WebhookController {
           }
 
           console.log('✅ 事件处理完成，返回成功响应');
-          res.json({ success: true });
+          ctx.body = { success: true };
           return;
         } catch (error) {
           console.error('❌ 事件处理过程中发生错误:', error);
           this.logService.addLog('error', 'Event processing failed', error instanceof Error ? error.message : 'Unknown error');
           // 即使处理失败，也返回成功响应，避免飞书重试
-          res.json({ success: true, error: error instanceof Error ? error.message : 'Unknown error' });
+          ctx.body = { success: true, error: error instanceof Error ? error.message : 'Unknown error' };
           return;
         }
       }
@@ -190,33 +220,35 @@ export class WebhookController {
           }
 
           console.log('✅ 旧格式事件处理完成，返回成功响应');
-          res.json({ success: true });
+          ctx.body = { success: true };
           return;
         } catch (error) {
           console.error('❌ 旧格式事件处理过程中发生错误:', error);
           this.logService.addLog('error', 'Old format event processing failed', error instanceof Error ? error.message : 'Unknown error');
           // 即使处理失败，也返回成功响应，避免飞书重试
-          res.json({ success: true, error: error instanceof Error ? error.message : 'Unknown error' });
+          ctx.body = { success: true, error: error instanceof Error ? error.message : 'Unknown error' };
           return;
         }
       }
 
       // 如果没有匹配的格式，返回错误
-      res.status(400).json({ error: 'Invalid webhook payload' });
+      ctx.status = 400;
+      ctx.body = { error: 'Invalid webhook payload' };
     } catch (error) {
       console.error('Webhook processing failed:', error);
-      res.status(500).json({ error: 'Webhook processing failed' });
+      ctx.status = 500;
+      ctx.body = { error: 'Webhook processing failed' };
     }
   }
 
-  public getCallbackInfo(req: Request, res: Response): void {
-    console.log('callback received', req.body);
-    res.json({ 
+  public getCallbackInfo(ctx: Koa.Context): void {
+    console.log('callback received', ctx.request.body);
+    ctx.body = { 
       message: 'Webhook endpoint is ready',
       status: 'active',
       timestamp: new Date().toISOString(),
-      ...req.body
-    });
+      ...(ctx.request.body as any)
+    };
   }
 
   // 自动回复消息
@@ -444,5 +476,41 @@ export class WebhookController {
       const errorLog = `${new Date().toISOString()} - Toast通知发送失败: ${error instanceof Error ? error.message : 'Unknown error'} -> 用户: ${userId}\n`;
       fs.appendFileSync('toast_errors.log', errorLog);
     }
+  }
+
+  /**
+   * 获取 Koa 适配器
+   */
+  public getKoaAdapter() {
+    const eventDispatcher = this.eventDispatcherService.getEventDispatcher();
+    return async (ctx: Koa.Context) => {
+      try {
+        // 构造 EventDispatcher 需要的数据格式
+        const eventData = {
+          body: ctx.request.body,
+          headers: ctx.headers
+        };
+
+        // 使用 EventDispatcher 处理请求
+        const result = await eventDispatcher.invoke(eventData);
+        
+        // 设置响应
+        ctx.body = result;
+      } catch (error) {
+        console.error('❌ EventDispatcher 处理失败:', error);
+        ctx.status = 500;
+        ctx.body = { error: 'EventDispatcher processing failed' };
+      }
+    };
+  }
+
+  /**
+   * 获取 Express 适配器（兼容性保留）
+   */
+  public getExpressAdapter() {
+    const eventDispatcher = this.eventDispatcherService.getEventDispatcher();
+    return lark.adaptExpress(eventDispatcher, {
+      autoChallenge: true
+    });
   }
 } 

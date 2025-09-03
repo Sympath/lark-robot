@@ -6,7 +6,7 @@ class MessageController {
         this.larkService = larkService;
         this.logService = logService;
     }
-    async sendDefaultMessage(_req, res) {
+    async sendDefaultMessage(ctx) {
         try {
             const lark = require('@larksuiteoapi/node-sdk');
             const client = new lark.Client({
@@ -30,24 +30,25 @@ class MessageController {
             });
             console.log('✅ 直接 SDK 调用成功:', result);
             this.logService.addLog('info', 'Direct SDK message sent successfully', result);
-            res.json({
+            ctx.body = {
                 success: true,
                 message: 'Direct SDK message sent successfully',
                 data: result
-            });
+            };
         }
         catch (error) {
             this.logService.addLog('error', 'Error sending direct SDK message', error instanceof Error ? error.message : 'Unknown error');
-            res.status(500).json({
+            ctx.status = 500;
+            ctx.body = {
                 success: false,
                 error: 'Failed to send message',
                 details: error instanceof Error ? error.message : 'Unknown error'
-            });
+            };
         }
     }
-    async sendCustomMessage(req, res) {
+    async sendCustomMessage(ctx) {
         try {
-            const { receive_id, template_id, template_variable, receive_id_type = 'user_id', content, msg_type = 'text', type } = req.body;
+            const { receive_id, template_id, template_variable, receive_id_type = 'user_id', content, msg_type = 'text', type } = ctx.request.body;
             const actualMsgType = type === 'card' ? 'interactive' : msg_type;
             if (actualMsgType === 'interactive') {
                 const lark = require('@larksuiteoapi/node-sdk');
@@ -103,11 +104,11 @@ class MessageController {
                     },
                 });
                 this.logService.addLog('info', 'Interactive message sent successfully', result);
-                res.json({
+                ctx.body = {
                     success: true,
                     message: 'Interactive message sent successfully',
                     data: result
-                });
+                };
                 return;
             }
             if (template_id) {
@@ -119,11 +120,11 @@ class MessageController {
                 };
                 const response = await this.larkService.sendCardMessage(messageRequest);
                 this.logService.addLog('info', 'Custom message sent successfully', response);
-                res.json({
+                ctx.body = {
                     success: true,
                     message: 'Custom message sent successfully',
                     data: response
-                });
+                };
                 return;
             }
             const messageRequest = {
@@ -134,23 +135,24 @@ class MessageController {
             };
             const response = await this.larkService.sendMessage(messageRequest);
             this.logService.addLog('info', 'Custom message sent successfully', response);
-            res.json({
+            ctx.body = {
                 success: true,
                 message: 'Custom message sent successfully',
                 data: response
-            });
+            };
         }
         catch (error) {
             console.error('发送消息失败:', error);
             this.logService.addLog('error', 'Error sending custom message', error instanceof Error ? error.message : 'Unknown error');
-            res.status(500).json({
+            ctx.status = 500;
+            ctx.body = {
                 success: false,
                 error: 'Failed to send custom message',
                 details: error instanceof Error ? error.message : 'Unknown error'
-            });
+            };
         }
     }
-    async testSDKDirect(_req, res) {
+    async testSDKDirect(ctx) {
         try {
             const lark = require('@larksuiteoapi/node-sdk');
             const client = new lark.Client({
@@ -172,22 +174,23 @@ class MessageController {
                     msg_type: 'text',
                 },
             });
-            res.json({
+            ctx.body = {
                 success: true,
                 message: 'Direct SDK test successful',
                 data: result
-            });
+            };
         }
         catch (error) {
-            res.status(500).json({
+            ctx.status = 500;
+            ctx.body = {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error',
                 stack: error instanceof Error ? error.stack : undefined
-            });
+            };
         }
     }
-    getMessageInfo(_req, res) {
-        res.json({
+    getMessageInfo(ctx) {
+        ctx.body = {
             message: 'Message API endpoint is ready',
             endpoints: {
                 'PUT /api/message': 'Send default test message',
@@ -209,7 +212,7 @@ class MessageController {
                 template_variable: {},
                 receive_id_type: 'user_id'
             }
-        });
+        };
     }
 }
 exports.MessageController = MessageController;

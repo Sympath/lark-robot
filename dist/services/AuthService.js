@@ -59,18 +59,18 @@ class AuthService {
             };
         }
     }
-    validateSignature(req) {
+    validateSignature(ctx) {
         try {
-            const timestamp = req.headers['x-lark-request-timestamp'];
-            const nonce = req.headers['x-lark-request-nonce'];
-            const signature = req.headers['x-lark-signature'];
+            const timestamp = ctx.headers['x-lark-request-timestamp'];
+            const nonce = ctx.headers['x-lark-request-nonce'];
+            const signature = ctx.headers['x-lark-signature'];
             if (!timestamp || !nonce || !signature) {
                 return {
                     isValid: false,
                     error: 'Missing required headers: x-lark-request-timestamp, x-lark-request-nonce, x-lark-signature'
                 };
             }
-            const body = JSON.stringify(req.body);
+            const body = JSON.stringify(ctx.request.body);
             const signString = `${timestamp}\n${nonce}\n${body}\n`;
             const expectedSignature = crypto_1.default
                 .createHmac('sha256', this.appSecret)
@@ -84,7 +84,7 @@ class AuthService {
             }
             return {
                 isValid: true,
-                payload: req.body
+                payload: ctx.request.body
             };
         }
         catch (error) {
@@ -94,9 +94,9 @@ class AuthService {
             };
         }
     }
-    validateEncryptedRequest(req) {
+    validateEncryptedRequest(ctx) {
         try {
-            const encryptedData = req.body.encrypted_data || req.body.encrypt;
+            const encryptedData = ctx.request.body?.encrypted_data || ctx.request.body?.encrypt;
             if (!encryptedData) {
                 return {
                     isValid: false,
@@ -187,9 +187,9 @@ class AuthService {
             };
         }
     }
-    validateRequest(req) {
+    validateRequest(ctx) {
         try {
-            const payload = req.body;
+            const payload = ctx.request.body;
             if (!payload) {
                 return {
                     isValid: false,
@@ -198,7 +198,7 @@ class AuthService {
             }
             if (payload.encrypted_data || payload.encrypt) {
                 if (this.config.enableEncryption) {
-                    return this.validateEncryptedRequest(req);
+                    return this.validateEncryptedRequest(ctx);
                 }
                 else {
                     return {
@@ -214,7 +214,7 @@ class AuthService {
                 }
             }
             if (this.config.enableSignatureValidation) {
-                const signatureResult = this.validateSignature(req);
+                const signatureResult = this.validateSignature(ctx);
                 if (!signatureResult.isValid) {
                     return signatureResult;
                 }

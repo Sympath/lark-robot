@@ -1,11 +1,11 @@
-import { Request, Response, NextFunction } from 'express';
+import Koa from 'koa';
 export declare class AuthMiddleware {
     private authService;
     private logService;
     constructor();
-    validateFeishuWebhook(req: Request, res: Response, next: NextFunction): void;
-    validateSignature(req: Request, res: Response, next: NextFunction): void;
-    logRequest(req: Request, _res: Response, next: NextFunction): void;
-    errorHandler(error: Error, req: Request, res: Response, _next: NextFunction): void;
+    validateFeishuWebhook: (ctx: Koa.Context, next: Koa.Next) => Promise<void>;
+    validateSignature: (ctx: Koa.Context, next: Koa.Next) => Promise<void>;
+    logRequest: (ctx: Koa.Context, next: Koa.Next) => Promise<void>;
+    errorHandler: (ctx: Koa.Context, next: Koa.Next) => Promise<void>;
 }
 //# sourceMappingURL=authMiddleware.d.ts.map

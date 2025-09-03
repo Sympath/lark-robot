@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const helmet_1 = __importDefault(require("helmet"));
-const morgan_1 = __importDefault(require("morgan"));
+const koa_1 = __importDefault(require("koa"));
+const koa_router_1 = __importDefault(require("koa-router"));
+const koa_cors_1 = __importDefault(require("koa-cors"));
+const koa_logger_1 = __importDefault(require("koa-logger"));
+const koa_bodyparser_1 = __importDefault(require("koa-bodyparser"));
 const LarkService_1 = require("./services/LarkService");
 const LogService_1 = require("./services/LogService");
 const authMiddleware_1 = require("./middleware/authMiddleware");
@@ -19,7 +20,8 @@ const server_1 = __importDefault(require("react-dom/server"));
 const TestPageContainer_1 = __importDefault(require("./components/TestPageContainer"));
 const VERSION = '1.0.9';
 const BUILD_TIME = new Date().toISOString();
-const app = (0, express_1.default)();
+const app = new koa_1.default();
+const router = new koa_router_1.default();
 const port = process.env.PORT || 3000;
 const logService = new LogService_1.LogService();
 const larkService = new LarkService_1.LarkService();
@@ -28,61 +30,43 @@ const healthController = new HealthController_1.HealthController(larkService, lo
 const messageController = new MessageController_1.MessageController(larkService, logService);
 const webhookController = new WebhookController_1.WebhookController(logService);
 const logController = new LogController_1.LogController(logService);
-app.use((0, morgan_1.default)('combined'));
-app.use(express_1.default.json({ limit: '10mb' }));
-app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
-app.use((0, cors_1.default)({
-    origin: true,
+app.use((0, koa_logger_1.default)());
+app.use((0, koa_bodyparser_1.default)({
+    jsonLimit: '10mb',
+    formLimit: '10mb',
+    textLimit: '10mb'
+}));
+app.use((0, koa_cors_1.default)({
+    origin: '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    headers: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-app.use((0, helmet_1.default)({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "https:", "http:"],
-            connectSrc: ["'self'", "http:", "https:"],
-            fontSrc: ["'self'"],
-            objectSrc: ["'none'"],
-            mediaSrc: ["'self'"],
-            frameSrc: ["'none'"],
-        },
-    },
-    crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-    dnsPrefetchControl: false,
-    frameguard: false,
-    hidePoweredBy: true,
-    hsts: false,
-    ieNoOpen: true,
-    noSniff: true,
-    permittedCrossDomainPolicies: false,
-    referrerPolicy: { policy: "no-referrer" },
-    xssFilter: true
-}));
-app.get('/favicon.ico', (_req, res) => {
-    res.status(204).end();
+app.use(async (ctx, next) => {
+    ctx.set('X-Content-Type-Options', 'nosniff');
+    ctx.set('X-Frame-Options', 'DENY');
+    ctx.set('X-XSS-Protection', '1; mode=block');
+    await next();
 });
-app.get('/api/health', (req, res) => healthController.getHealthStatus(req, res));
-app.post('/api/message', (req, res) => messageController.sendCustomMessage(req, res));
-app.post('/api/webhook', authMiddleware.logRequest.bind(authMiddleware), authMiddleware.validateFeishuWebhook.bind(authMiddleware), (req, res) => webhookController.handleCallback(req, res));
-app.post('/api/callback', authMiddleware.logRequest.bind(authMiddleware), authMiddleware.validateFeishuWebhook.bind(authMiddleware), (req, res) => webhookController.handleCallback(req, res));
-app.get('/api/logs', (req, res) => logController.getLogs(req, res));
-app.get('/case', (_req, res) => {
+router.get('/favicon.ico', (ctx) => {
+    ctx.status = 204;
+});
+router.get('/api/health', (ctx) => healthController.getHealthStatus(ctx));
+router.post('/api/message', (ctx) => messageController.sendCustomMessage(ctx));
+router.post('/api/webhook', authMiddleware.logRequest, authMiddleware.validateFeishuWebhook, (ctx) => webhookController.handleCallback(ctx));
+router.post('/api/callback', authMiddleware.logRequest, webhookController.getKoaAdapter());
+router.post('/api/callback/koa', authMiddleware.logRequest, webhookController.getKoaAdapter());
+router.get('/api/logs', (ctx) => logController.getLogs(ctx));
+router.get('/case', (ctx) => {
     try {
-        res.set({
+        ctx.set({
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
             'Expires': '0',
             'ETag': `"${VERSION}-${BUILD_TIME}"`
         });
         const html = server_1.default.renderToString(react_1.default.createElement(TestPageContainer_1.default));
-        res.send(`
+        ctx.body = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -119,19 +103,20 @@ app.get('/case', (_req, res) => {
           </script>
         </body>
       </html>
-    `);
+    `;
     }
     catch (error) {
         console.error('Error rendering test page:', error);
-        res.status(500).send('Error rendering test page');
+        ctx.status = 500;
+        ctx.body = 'Error rendering test page';
     }
 });
-app.get('/', (_req, res) => {
-    res.redirect('/case');
+router.get('/', (ctx) => {
+    ctx.redirect('/case');
 });
-app.use((err, req, res, next) => {
-    authMiddleware.errorHandler(err, req, res, next);
-});
+app.use(router.routes());
+app.use(router.allowedMethods());
+app.use(authMiddleware.errorHandler);
 app.listen(port, () => {
     console.log('🚀 飞书 Webhook 服务器启动成功');
     console.log('📦 版本信息:', VERSION);

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import Koa from 'koa';
 import { HealthStatus } from '../types';
 import { LarkService } from '../services/LarkService';
 import { LogService } from '../services/LogService';
@@ -23,7 +23,7 @@ export class HealthController {
     this.logService = logService;
   }
 
-  public getHealthStatus(_req: Request, res: Response): void {
+  public getHealthStatus(ctx: Koa.Context): void {
     try {
       const healthStatus: HealthStatus = {
         status: 'healthy',
@@ -44,7 +44,7 @@ export class HealthController {
       };
 
       this.logService.addLog('info', 'Health check completed');
-      res.json(healthStatus);
+      ctx.body = healthStatus;
     } catch (error) {
       this.logService.addLog('error', 'Health check failed', error instanceof Error ? error.message : 'Unknown error');
       
@@ -66,7 +66,8 @@ export class HealthController {
         }
       };
 
-      res.status(503).json(errorStatus);
+      ctx.status = 503;
+      ctx.body = errorStatus;
     }
   }
 } 

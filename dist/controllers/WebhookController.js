@@ -1,23 +1,60 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebhookController = void 0;
 const LarkService_1 = require("../services/LarkService");
 const AuthService_1 = require("../services/AuthService");
+const EventDispatcherService_1 = require("../services/EventDispatcherService");
+const lark = __importStar(require("@larksuiteoapi/node-sdk"));
 class WebhookController {
     constructor(logService) {
         this.logService = logService;
         this.larkService = new LarkService_1.LarkService();
         this.authService = new AuthService_1.AuthService();
+        this.eventDispatcherService = new EventDispatcherService_1.EventDispatcherService(logService);
     }
-    async handleUrlVerification(req, res) {
+    async handleUrlVerification(ctx) {
         try {
-            const payload = req.body;
+            const payload = ctx.request.body;
             console.log('🔍 URL 验证请求:', JSON.stringify(payload, null, 2));
             const authResult = this.authService.validateUrlVerification(payload);
             if (!authResult.isValid) {
                 console.error('❌ URL 验证失败:', authResult.error);
                 this.logService.addLog('error', 'URL verification failed', { error: authResult.error });
-                res.status(401).json({ error: authResult.error });
+                ctx.status = 401;
+                ctx.body = { error: authResult.error };
                 return;
             }
             console.log('✅ URL 验证成功，challenge:', authResult.payload.challenge);
@@ -25,32 +62,52 @@ class WebhookController {
                 challenge: authResult.payload.challenge,
                 timestamp: new Date().toISOString()
             });
-            res.setHeader('Content-Type', 'application/json');
-            res.json({ challenge: authResult.payload.challenge });
+            ctx.set('Content-Type', 'application/json');
+            ctx.body = { challenge: authResult.payload.challenge };
         }
         catch (error) {
             console.error('URL 验证失败:', error);
             this.logService.addLog('error', 'URL verification error', error instanceof Error ? error.message : 'Unknown error');
-            res.status(500).json({ error: 'Verification failed' });
+            ctx.status = 500;
+            ctx.body = { error: 'Verification failed' };
         }
     }
-    async handleCallback(req, res) {
+    async handleCallbackWithEventDispatcher(ctx) {
         try {
-            const authResult = this.authService.validateRequest(req);
+            console.log('🔍 使用 EventDispatcher 处理 webhook 请求');
+            if (!this.eventDispatcherService.isInitialized()) {
+                console.error('❌ EventDispatcher 未初始化');
+                ctx.status = 500;
+                ctx.body = { error: 'EventDispatcher not initialized' };
+                return;
+            }
+            await this.eventDispatcherService.handleWebhookRequest(ctx);
+        }
+        catch (error) {
+            console.error('❌ EventDispatcher 处理失败:', error);
+            this.logService.addLog('error', 'EventDispatcher processing failed', error instanceof Error ? error.message : 'Unknown error');
+            ctx.status = 500;
+            ctx.body = { error: 'EventDispatcher processing failed' };
+        }
+    }
+    async handleCallback(ctx) {
+        try {
+            const authResult = this.authService.validateRequest(ctx);
             if (!authResult.isValid) {
                 console.error('❌ 请求验证失败:', authResult.error);
                 this.logService.addLog('error', 'Request validation failed', { error: authResult.error });
-                res.status(401).json({ error: authResult.error });
+                ctx.status = 401;
+                ctx.body = { error: authResult.error };
                 return;
             }
             console.log('✅ 请求验证成功');
             this.logService.addLog('info', 'Request validation successful');
-            const payload = authResult.payload || req.body;
+            const payload = authResult.payload || ctx.request.body;
             this.logService.addLog('info', 'callback received', payload);
             console.log('🔍 收到 webhook 请求:', JSON.stringify(payload, null, 2));
             if (payload.type === 'url_verification') {
                 this.logService.addLog('info', 'URL verification successful');
-                res.json({ challenge: payload.challenge });
+                ctx.body = { challenge: payload.challenge };
                 return;
             }
             if (payload.schema === '2.0' && payload.event) {
@@ -95,13 +152,13 @@ class WebhookController {
                             }
                     }
                     console.log('✅ 事件处理完成，返回成功响应');
-                    res.json({ success: true });
+                    ctx.body = { success: true };
                     return;
                 }
                 catch (error) {
                     console.error('❌ 事件处理过程中发生错误:', error);
                     this.logService.addLog('error', 'Event processing failed', error instanceof Error ? error.message : 'Unknown error');
-                    res.json({ success: true, error: error instanceof Error ? error.message : 'Unknown error' });
+                    ctx.body = { success: true, error: error instanceof Error ? error.message : 'Unknown error' };
                     return;
                 }
             }
@@ -137,31 +194,33 @@ class WebhookController {
                             }
                     }
                     console.log('✅ 旧格式事件处理完成，返回成功响应');
-                    res.json({ success: true });
+                    ctx.body = { success: true };
                     return;
                 }
                 catch (error) {
                     console.error('❌ 旧格式事件处理过程中发生错误:', error);
                     this.logService.addLog('error', 'Old format event processing failed', error instanceof Error ? error.message : 'Unknown error');
-                    res.json({ success: true, error: error instanceof Error ? error.message : 'Unknown error' });
+                    ctx.body = { success: true, error: error instanceof Error ? error.message : 'Unknown error' };
                     return;
                 }
             }
-            res.status(400).json({ error: 'Invalid webhook payload' });
+            ctx.status = 400;
+            ctx.body = { error: 'Invalid webhook payload' };
         }
         catch (error) {
             console.error('Webhook processing failed:', error);
-            res.status(500).json({ error: 'Webhook processing failed' });
+            ctx.status = 500;
+            ctx.body = { error: 'Webhook processing failed' };
         }
     }
-    getCallbackInfo(req, res) {
-        console.log('callback received', req.body);
-        res.json({
+    getCallbackInfo(ctx) {
+        console.log('callback received', ctx.request.body);
+        ctx.body = {
             message: 'Webhook endpoint is ready',
             status: 'active',
             timestamp: new Date().toISOString(),
-            ...req.body
-        });
+            ...ctx.request.body
+        };
     }
     async autoReplyToMessage(event) {
         try {
@@ -343,6 +402,30 @@ class WebhookController {
             const errorLog = `${new Date().toISOString()} - Toast通知发送失败: ${error instanceof Error ? error.message : 'Unknown error'} -> 用户: ${userId}\n`;
             fs.appendFileSync('toast_errors.log', errorLog);
         }
+    }
+    getKoaAdapter() {
+        const eventDispatcher = this.eventDispatcherService.getEventDispatcher();
+        return async (ctx) => {
+            try {
+                const eventData = {
+                    body: ctx.request.body,
+                    headers: ctx.headers
+                };
+                const result = await eventDispatcher.invoke(eventData);
+                ctx.body = result;
+            }
+            catch (error) {
+                console.error('❌ EventDispatcher 处理失败:', error);
+                ctx.status = 500;
+                ctx.body = { error: 'EventDispatcher processing failed' };
+            }
+        };
+    }
+    getExpressAdapter() {
+        const eventDispatcher = this.eventDispatcherService.getEventDispatcher();
+        return lark.adaptExpress(eventDispatcher, {
+            autoChallenge: true
+        });
     }
 }
 exports.WebhookController = WebhookController;

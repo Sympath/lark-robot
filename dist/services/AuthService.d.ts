@@ -1,3 +1,4 @@
+import Koa from 'koa';
 export interface AuthResult {
     isValid: boolean;
     error?: string;
@@ -11,11 +12,11 @@ export declare class AuthService {
     constructor();
     private decryptData;
     validateToken(payload: any): AuthResult;
-    validateSignature(req: any): AuthResult;
-    validateEncryptedRequest(req: any): AuthResult;
+    validateSignature(ctx: Koa.Context): AuthResult;
+    validateEncryptedRequest(ctx: Koa.Context): AuthResult;
     validateUrlVerification(payload: any): AuthResult;
     validateEventCallback(payload: any): AuthResult;
-    validateRequest(req: any): AuthResult;
+    validateRequest(ctx: Koa.Context): AuthResult;
     generateNonce(): string;
     generateTimestamp(): string;
 }

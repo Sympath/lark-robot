@@ -1,7 +1,8 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
+import Koa from 'koa';
+import Router from 'koa-router';
+import cors from 'koa-cors';
+import logger from 'koa-logger';
+import bodyParser from 'koa-bodyparser';
 import { LarkService } from './services/LarkService';
 import { LogService } from './services/LogService';
 import { AuthMiddleware } from './middleware/authMiddleware';
@@ -17,7 +18,8 @@ import TestPageContainer from './components/TestPageContainer';
 const VERSION = '1.0.9';
 const BUILD_TIME = new Date().toISOString();
 
-const app = express();
+const app = new Koa();
+const router = new Router();
 const port = process.env.PORT || 3000;
 
 // 配置服务
@@ -32,77 +34,64 @@ const webhookController = new WebhookController(logService);
 const logController = new LogController(logService);
 
 // 中间件配置
-app.use(morgan('combined'));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(logger());
+app.use(bodyParser({
+  jsonLimit: '10mb',
+  formLimit: '10mb',
+  textLimit: '10mb'
+}));
 
 // CORS配置 - 允许所有来源
 app.use(cors({
-  origin: true,
+  origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  headers: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// 安全配置 - 更宽松的策略
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:", "http:"],
-      connectSrc: ["'self'", "http:", "https:"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
-  crossOriginEmbedderPolicy: false,
-  crossOriginOpenerPolicy: false,
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  dnsPrefetchControl: false,
-  frameguard: false,
-  hidePoweredBy: true,
-  hsts: false,
-  ieNoOpen: true,
-  noSniff: true,
-  permittedCrossDomainPolicies: false,
-  referrerPolicy: { policy: "no-referrer" },
-  xssFilter: true
-}));
+// 安全配置 - 简化版本
+app.use(async (ctx, next) => {
+  ctx.set('X-Content-Type-Options', 'nosniff');
+  ctx.set('X-Frame-Options', 'DENY');
+  ctx.set('X-XSS-Protection', '1; mode=block');
+  await next();
+});
 
 // 添加favicon路由避免404错误
-app.get('/favicon.ico', (_req, res) => {
-  res.status(204).end();
+router.get('/favicon.ico', (ctx: Koa.Context) => {
+  ctx.status = 204;
 });
 
 // API路由
-app.get('/api/health', (req, res) => healthController.getHealthStatus(req, res));
-app.post('/api/message', (req, res) => messageController.sendCustomMessage(req, res));
+router.get('/api/health', (ctx: Koa.Context) => healthController.getHealthStatus(ctx));
+router.post('/api/message', (ctx: Koa.Context) => messageController.sendCustomMessage(ctx));
 
 // Webhook 路由 - 使用鉴权中间件
-app.post('/api/webhook', 
-  authMiddleware.logRequest.bind(authMiddleware),
-  authMiddleware.validateFeishuWebhook.bind(authMiddleware),
-  (req, res) => webhookController.handleCallback(req, res)
+router.post('/api/webhook', 
+  authMiddleware.logRequest,
+  authMiddleware.validateFeishuWebhook,
+  (ctx: Koa.Context) => webhookController.handleCallback(ctx)
 );
 
-app.post('/api/callback', 
-  authMiddleware.logRequest.bind(authMiddleware),
-  authMiddleware.validateFeishuWebhook.bind(authMiddleware),
-  (req, res) => webhookController.handleCallback(req, res)
+// 使用 EventDispatcher 的回调端点（推荐使用）
+router.post('/api/callback', 
+  authMiddleware.logRequest,
+  webhookController.getKoaAdapter()
 );
 
-app.get('/api/logs', (req, res) => logController.getLogs(req, res));
+// 使用 Koa 适配器的回调端点
+router.post('/api/callback/koa', 
+  authMiddleware.logRequest,
+  webhookController.getKoaAdapter()
+);
+
+router.get('/api/logs', (ctx: Koa.Context) => logController.getLogs(ctx));
 
 // 测试页面路由
-app.get('/case', (_req, res) => {
+router.get('/case', (ctx: Koa.Context) => {
   try {
     // 添加缓存控制头，防止浏览器缓存
-    res.set({
+    ctx.set({
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0',
@@ -110,7 +99,7 @@ app.get('/case', (_req, res) => {
     });
     
     const html = ReactDOMServer.renderToString(React.createElement(TestPageContainer));
-    res.send(`
+    ctx.body = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -147,22 +136,25 @@ app.get('/case', (_req, res) => {
           </script>
         </body>
       </html>
-    `);
+    `;
   } catch (error) {
     console.error('Error rendering test page:', error);
-    res.status(500).send('Error rendering test page');
+    ctx.status = 500;
+    ctx.body = 'Error rendering test page';
   }
 });
 
 // 根路径重定向到测试页面
-app.get('/', (_req, res) => {
-  res.redirect('/case');
+router.get('/', (ctx: Koa.Context) => {
+  ctx.redirect('/case');
 });
 
+// 使用路由
+app.use(router.routes());
+app.use(router.allowedMethods());
+
 // 错误处理中间件
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  authMiddleware.errorHandler(err, req, res, next);
-});
+app.use(authMiddleware.errorHandler);
 
 // 启动服务器
 app.listen(port, () => {

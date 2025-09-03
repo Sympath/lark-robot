@@ -19,7 +19,7 @@ class HealthController {
         this.larkService = larkService;
         this.logService = logService;
     }
-    getHealthStatus(_req, res) {
+    getHealthStatus(ctx) {
         try {
             const healthStatus = {
                 status: 'healthy',
@@ -39,7 +39,7 @@ class HealthController {
                 }
             };
             this.logService.addLog('info', 'Health check completed');
-            res.json(healthStatus);
+            ctx.body = healthStatus;
         }
         catch (error) {
             this.logService.addLog('error', 'Health check failed', error instanceof Error ? error.message : 'Unknown error');
@@ -60,7 +60,8 @@ class HealthController {
                     sdkLoaded: false
                 }
             };
-            res.status(503).json(errorStatus);
+            ctx.status = 503;
+            ctx.body = errorStatus;
         }
     }
 }

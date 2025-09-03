@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import Koa from 'koa';
 import { MessageRequest } from '../types';
 import { LarkService } from '../services/LarkService';
 import { LogService } from '../services/LogService';
@@ -12,7 +12,7 @@ export class MessageController {
     this.logService = logService;
   }
 
-  public async sendDefaultMessage(_req: Request, res: Response): Promise<void> {
+  public async sendDefaultMessage(ctx: Koa.Context): Promise<void> {
     try {
       // 直接测试 SDK，绕过 LarkService
       const lark = require('@larksuiteoapi/node-sdk');
@@ -42,24 +42,25 @@ export class MessageController {
       
       this.logService.addLog('info', 'Direct SDK message sent successfully', result);
       
-      res.json({ 
+      ctx.body = { 
         success: true, 
         message: 'Direct SDK message sent successfully',
         data: result
-      });
+      };
     } catch (error) {
       this.logService.addLog('error', 'Error sending direct SDK message', error instanceof Error ? error.message : 'Unknown error');
-      res.status(500).json({ 
+      ctx.status = 500;
+      ctx.body = { 
         success: false, 
         error: 'Failed to send message',
         details: error instanceof Error ? error.message : 'Unknown error'
-      });
+      };
     }
   }
 
-  public async sendCustomMessage(req: Request, res: Response): Promise<void> {
+  public async sendCustomMessage(ctx: Koa.Context): Promise<void> {
     try {
-      const { receive_id, template_id, template_variable, receive_id_type = 'user_id', content, msg_type = 'text', type } = req.body;
+      const { receive_id, template_id, template_variable, receive_id_type = 'user_id', content, msg_type = 'text', type } = ctx.request.body as any;
       
       // 处理前端发送的type字段
       const actualMsgType = type === 'card' ? 'interactive' : msg_type;
@@ -125,11 +126,11 @@ export class MessageController {
 
         this.logService.addLog('info', 'Interactive message sent successfully', result);
         
-        res.json({ 
+        ctx.body = { 
           success: true, 
           message: 'Interactive message sent successfully',
           data: result
-        });
+        };
         return;
       }
       
@@ -146,11 +147,11 @@ export class MessageController {
         
         this.logService.addLog('info', 'Custom message sent successfully', response);
         
-        res.json({ 
+        ctx.body = { 
           success: true, 
           message: 'Custom message sent successfully',
           data: response
-        });
+        };
         return;
       }
 
@@ -166,23 +167,24 @@ export class MessageController {
       
       this.logService.addLog('info', 'Custom message sent successfully', response);
       
-      res.json({ 
+      ctx.body = { 
         success: true, 
         message: 'Custom message sent successfully',
         data: response
-      });
+      };
     } catch (error) {
       console.error('发送消息失败:', error);
       this.logService.addLog('error', 'Error sending custom message', error instanceof Error ? error.message : 'Unknown error');
-      res.status(500).json({ 
+      ctx.status = 500;
+      ctx.body = { 
         success: false, 
         error: 'Failed to send custom message',
         details: error instanceof Error ? error.message : 'Unknown error'
-      });
+      };
     }
   }
 
-  public async testSDKDirect(_req: Request, res: Response): Promise<void> {
+  public async testSDKDirect(ctx: Koa.Context): Promise<void> {
     try {
       // 直接测试 SDK，绕过 LarkService
       const lark = require('@larksuiteoapi/node-sdk');
@@ -208,22 +210,23 @@ export class MessageController {
         },
       });
 
-      res.json({ 
+      ctx.body = { 
         success: true, 
         message: 'Direct SDK test successful',
         data: result
-      });
+      };
     } catch (error) {
-      res.status(500).json({ 
+      ctx.status = 500;
+      ctx.body = { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
-      });
+      };
     }
   }
 
-  public getMessageInfo(_req: Request, res: Response): void {
-    res.json({ 
+  public getMessageInfo(ctx: Koa.Context): void {
+    ctx.body = { 
       message: 'Message API endpoint is ready',
       endpoints: {
         'PUT /api/message': 'Send default test message',
@@ -245,6 +248,6 @@ export class MessageController {
         template_variable: {},
         receive_id_type: 'user_id'
       }
-    });
+    };
   }
 } 
