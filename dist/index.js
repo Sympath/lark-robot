@@ -8,6 +8,7 @@ const koa_bodyparser_1 = __importDefault(require("koa-bodyparser"));
 const node_sdk_1 = require("@larksuiteoapi/node-sdk");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const koa_router_1 = __importDefault(require("koa-router"));
 // 日志工具类
 class Logger {
     constructor() {
@@ -80,10 +81,15 @@ app.use(async (ctx, next) => {
     }
     await next();
 });
-// 使用飞书SDK的Koa适配器处理webhook
-app.use((0, node_sdk_1.adaptKoa)('/webhook', eventDispatcher, {
+// // 使用飞书SDK的Koa适配器处理webhook
+// app.use(adaptKoa('/webhook', eventDispatcher, {
+//   autoChallenge: true, // 自动处理challenge验证
+// }));
+const router = new koa_router_1.default();
+router.post('/webhook', (0, node_sdk_1.adaptKoa)('/webhook', eventDispatcher, {
     autoChallenge: true, // 自动处理challenge验证
 }));
+app.use(router.routes()).use(router.allowedMethods());
 // 处理其他路由
 app.use(async (ctx, next) => {
     if (ctx.path !== '/health' && ctx.path !== '/webhook') {

@@ -1,38 +1,20 @@
-[2025-09-03T19:07:44.109Z] [INFO] 收到webhook请求: {"headers":{"x-forwarded-for":"123.58.10.238","x-forwarded-proto":"https","x-forwarded-port":"443","host":"feishu-webhook-new.loca.lt","accept-encoding":"gzip","x-request-id":"20250904030743E53F18E2B0C6C3A2FAC4","unit":"eu_nc","content-type":"application/json;charset=utf-8","content-length":"206","user-agent":"Go-http-client/1.1","x-forwarded-host":"feishu-webhook-new.loca.lt","connection":"keep-alive"},"body":{"encrypt":"vxOZzYV9LK69ngQoO+5lwA1BirS2RpDuYdi1zjJAdi+QPsEdndsDV/LPrcXUTvwxinPoPg2iEsHTPvaVz8270PYYLWnhfPWp6XUt9xdaEY68k5vyRlyTUGmxVz1DYmggJsYKTX8+KHFc6b8KaAWPXYlmWmCSwUPLpP6aTpyHrrOAsl7FbrrXC+yrzA0vMx0d"}}
-[2025-09-03T19:07:44.110Z] [INFO] 收到加密数据，直接返回成功响应
-[2025-09-03T19:09:26.922Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
-[2025-09-03T19:09:26.951Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
-[2025-09-03T19:09:26.986Z] [INFO] 服务器已关闭
-[2025-09-03T19:09:36.575Z] [INFO] 🚀 服务器运行在端口 3000
-[2025-09-03T19:09:36.576Z] [INFO] 📡 Webhook地址: http://localhost:3000/webhook
-[2025-09-03T19:09:36.576Z] [INFO] 💚 健康检查: http://localhost:3000/health
-[2025-09-03T19:09:36.576Z] [INFO] 📝 日志文件: /Users/wangzhiyuan/Documents/selfspace/feishu/logs
-[2025-09-03T19:09:59.482Z] [INFO] 收到webhook请求: {"headers":{"x-forwarded-for":"101.71.37.99","x-forwarded-proto":"https","x-forwarded-port":"443","host":"feishu-webhook-new.loca.lt","content-length":"33","content-type":"application/json","accept":"*/*","user-agent":"curl/7.84.0","x-forwarded-host":"feishu-webhook-new.loca.lt","connection":"keep-alive"},"body":{"encrypt":"test_encrypted_data"}}
-[2025-09-03T19:09:59.482Z] [INFO] 收到加密数据，使用EventDispatcher处理
-[2025-09-03T19:11:38.048Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
-[2025-09-03T19:11:38.078Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
-[2025-09-03T19:11:38.111Z] [INFO] 服务器已关闭
-[2025-09-03T19:11:44.767Z] [INFO] 🚀 服务器运行在端口 3000
-[2025-09-03T19:11:44.768Z] [INFO] 📡 Webhook地址: http://localhost:3000/webhook
-[2025-09-03T19:11:44.768Z] [INFO] 💚 健康检查: http://localhost:3000/health
-[2025-09-03T19:11:44.768Z] [INFO] 📝 日志文件: /Users/wangzhiyuan/Documents/selfspace/feishu/logs
-[2025-09-03T19:11:58.156Z] [INFO] 收到webhook请求: {"headers":{"x-forwarded-for":"101.71.37.99","x-forwarded-proto":"https","x-forwarded-port":"443","host":"feishu-webhook-new.loca.lt","content-length":"33","content-type":"application/json","accept":"*/*","user-agent":"curl/7.84.0","x-forwarded-host":"feishu-webhook-new.loca.lt","connection":"keep-alive"},"body":{"encrypt":"test_encrypted_data"}}
-[2025-09-03T19:11:58.157Z] [INFO] 收到加密数据，使用EventDispatcher处理
-[2025-09-03T19:11:58.159Z] [INFO] 尝试直接处理加密数据...
-[2025-09-03T19:12:26.651Z] [INFO] 收到webhook请求: {"headers":{"x-forwarded-for":"101.71.39.115","x-forwarded-proto":"https","x-forwarded-port":"443","host":"feishu-webhook-new.loca.lt","x-lark-signature":"56332286fea168eec5602c6251af91452a2c3077f09821838ab05b28f7323a9d","x-lark-request-nonce":"test-nonce-g2ina3ept","x-lark-request-timestamp":"1756926745","content-length":"102","content-type":"application/json","x-forwarded-host":"feishu-webhook-new.loca.lt","connection":"keep-alive"},"body":{"encrypt":"Q1zdcbIfHsMJZjsvc6uYdR4hV1Wp4sgW89lbiU4gu5qEZvb5jTbyVjxUR/4Ji0tIguLaZAbtrfx6FG9pkFLePw=="}}
-[2025-09-03T19:12:26.652Z] [INFO] 收到加密数据，使用EventDispatcher处理
-[2025-09-03T19:12:26.652Z] [INFO] 尝试直接处理加密数据...
-[2025-09-03T19:13:43.887Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
-[2025-09-03T19:13:43.918Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
-[2025-09-03T19:13:43.951Z] [INFO] 服务器已关闭
-[2025-09-03T19:13:50.199Z] [INFO] 🚀 服务器运行在端口 3000
-[2025-09-03T19:13:50.199Z] [INFO] 📡 Webhook地址: http://localhost:3000/webhook
-[2025-09-03T19:13:50.199Z] [INFO] 💚 健康检查: http://localhost:3000/health
-[2025-09-03T19:13:50.199Z] [INFO] 📝 日志文件: /Users/wangzhiyuan/Documents/selfspace/feishu/logs
-[2025-09-03T19:15:05.044Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
-[2025-09-03T19:15:05.080Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
-[2025-09-03T19:15:05.200Z] [INFO] 服务器已关闭
-[2025-09-03T19:15:11.405Z] [INFO] 🚀 服务器运行在端口 3000
-[2025-09-03T19:15:11.405Z] [INFO] 📡 Webhook地址: http://localhost:3000/webhook
-[2025-09-03T19:15:11.406Z] [INFO] 💚 健康检查: http://localhost:3000/health
-[2025-09-03T19:15:11.406Z] [INFO] 📝 日志文件: /Users/wangzhiyuan/Documents/selfspace/feishu/logs
+[2025-09-03T23:19:10.224Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
+[2025-09-03T23:19:10.255Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
+[2025-09-03T23:19:10.289Z] [INFO] 服务器已关闭
+[2025-09-03T23:19:16.845Z] [INFO] 🚀 服务器运行在端口 3000
+[2025-09-03T23:19:16.846Z] [INFO] 📡 Webhook地址: http://localhost:3000/webhook
+[2025-09-03T23:19:16.846Z] [INFO] 💚 健康检查: http://localhost:3000/health
+[2025-09-03T23:19:16.846Z] [INFO] 📝 日志文件: /Users/wangzhiyuan/Documents/selfspace/feishu/logs
+[2025-09-03T23:19:36.019Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
+[2025-09-03T23:19:36.068Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
+[2025-09-03T23:19:36.105Z] [INFO] 服务器已关闭
+[2025-09-03T23:19:42.249Z] [INFO] 🚀 服务器运行在端口 3000
+[2025-09-03T23:19:42.249Z] [INFO] 📡 Webhook地址: http://localhost:3000/webhook
+[2025-09-03T23:19:42.250Z] [INFO] 💚 健康检查: http://localhost:3000/health
+[2025-09-03T23:19:42.250Z] [INFO] 📝 日志文件: /Users/wangzhiyuan/Documents/selfspace/feishu/logs
+[2025-09-03T23:59:31.035Z] [INFO] 收到 SIGTERM 信号，正在关闭服务器...
+[2025-09-03T23:59:31.036Z] [INFO] 服务器已关闭
+[2025-09-03T23:59:38.946Z] [INFO] 🚀 服务器运行在端口 3000
+[2025-09-03T23:59:38.947Z] [INFO] 📡 Webhook地址: http://localhost:3000/webhook
+[2025-09-03T23:59:38.948Z] [INFO] 💚 健康检查: http://localhost:3000/health
+[2025-09-03T23:59:38.948Z] [INFO] 📝 日志文件: /Users/wangzhiyuan/Documents/selfspace/feishu/logs

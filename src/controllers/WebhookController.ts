@@ -4,7 +4,6 @@ import { LogService } from '../services/LogService';
 import { LarkService } from '../services/LarkService';
 import { AuthService } from '../services/AuthService';
 import { EventDispatcherService } from '../services/EventDispatcherService';
-import authConfig from '../config/auth';
 import * as lark from '@larksuiteoapi/node-sdk';
 
 export class WebhookController {
@@ -486,47 +485,20 @@ export class WebhookController {
     const eventDispatcher = this.eventDispatcherService.getEventDispatcher();
     return async (ctx: Koa.Context) => {
       try {
-        const payload = ctx.request.body;
-        
-        // 手动处理 URL 验证请求
-        if ((payload as any).type === 'url_verification') {
-          console.log('🔍 处理 URL 验证请求:', JSON.stringify(payload, null, 2));
-          
-          // 验证 token
-          if ((payload as any).token !== authConfig.verificationToken) {
-            console.error('❌ URL 验证失败: Invalid token');
-            ctx.status = 401;
-            ctx.set('Content-Type', 'application/json');
-            ctx.body = { error: 'Invalid verification token' };
-            return;
-          }
-          
-          console.log('✅ URL 验证成功，challenge:', (payload as any).challenge);
-          
-          // 返回 challenge
-          ctx.status = 200;
-          ctx.set('Content-Type', 'application/json');
-          ctx.body = { challenge: (payload as any).challenge };
-          return;
-        }
-        
         // 构造 EventDispatcher 需要的数据格式
         const eventData = {
-          body: payload,
+          body: ctx.request.body,
           headers: ctx.headers
         };
 
-        // 使用 EventDispatcher 处理其他事件
+        // 使用 EventDispatcher 处理请求
         const result = await eventDispatcher.invoke(eventData);
         
         // 设置响应
-        ctx.status = 200;
-        ctx.set('Content-Type', 'application/json');
-        ctx.body = result || { success: true };
+        ctx.body = result;
       } catch (error) {
         console.error('❌ EventDispatcher 处理失败:', error);
         ctx.status = 500;
-        ctx.set('Content-Type', 'application/json');
         ctx.body = { error: 'EventDispatcher processing failed' };
       }
     };

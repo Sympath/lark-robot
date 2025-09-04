@@ -32,15 +32,11 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebhookController = void 0;
 const LarkService_1 = require("../services/LarkService");
 const AuthService_1 = require("../services/AuthService");
 const EventDispatcherService_1 = require("../services/EventDispatcherService");
-const auth_1 = __importDefault(require("../config/auth"));
 const lark = __importStar(require("@larksuiteoapi/node-sdk"));
 class WebhookController {
     constructor(logService) {
@@ -461,41 +457,19 @@ class WebhookController {
         const eventDispatcher = this.eventDispatcherService.getEventDispatcher();
         return async (ctx) => {
             try {
-                const payload = ctx.request.body;
-                // 手动处理 URL 验证请求
-                if (payload.type === 'url_verification') {
-                    console.log('🔍 处理 URL 验证请求:', JSON.stringify(payload, null, 2));
-                    // 验证 token
-                    if (payload.token !== auth_1.default.verificationToken) {
-                        console.error('❌ URL 验证失败: Invalid token');
-                        ctx.status = 401;
-                        ctx.set('Content-Type', 'application/json');
-                        ctx.body = { error: 'Invalid verification token' };
-                        return;
-                    }
-                    console.log('✅ URL 验证成功，challenge:', payload.challenge);
-                    // 返回 challenge
-                    ctx.status = 200;
-                    ctx.set('Content-Type', 'application/json');
-                    ctx.body = { challenge: payload.challenge };
-                    return;
-                }
                 // 构造 EventDispatcher 需要的数据格式
                 const eventData = {
-                    body: payload,
+                    body: ctx.request.body,
                     headers: ctx.headers
                 };
-                // 使用 EventDispatcher 处理其他事件
+                // 使用 EventDispatcher 处理请求
                 const result = await eventDispatcher.invoke(eventData);
                 // 设置响应
-                ctx.status = 200;
-                ctx.set('Content-Type', 'application/json');
-                ctx.body = result || { success: true };
+                ctx.body = result;
             }
             catch (error) {
                 console.error('❌ EventDispatcher 处理失败:', error);
                 ctx.status = 500;
-                ctx.set('Content-Type', 'application/json');
                 ctx.body = { error: 'EventDispatcher processing failed' };
             }
         };

@@ -4,6 +4,8 @@ import { EventDispatcher, adaptKoa } from '@larksuiteoapi/node-sdk';
 import { Context, Next } from 'koa';
 import fs from 'fs';
 import path from 'path';
+import Router from 'koa-router';
+
 
 // 定义事件数据类型
 interface UrlVerificationData {
@@ -104,10 +106,18 @@ app.use(async (ctx: Context, next: Next) => {
   await next();
 });
 
-// 使用飞书SDK的Koa适配器处理webhook
-app.use(adaptKoa('/webhook', eventDispatcher, {
+// // 使用飞书SDK的Koa适配器处理webhook
+// app.use(adaptKoa('/webhook', eventDispatcher, {
+//   autoChallenge: true, // 自动处理challenge验证
+// }));
+
+const router = new Router();
+
+router.post('/webhook', adaptKoa('/webhook', eventDispatcher, {
   autoChallenge: true, // 自动处理challenge验证
 }));
+
+app.use(router.routes()).use(router.allowedMethods());
 
 // 处理其他路由
 app.use(async (ctx: Context, next: Next) => {
